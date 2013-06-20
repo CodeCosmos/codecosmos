@@ -1,4 +1,4 @@
-CodeCosmos
-==========
+CodeCosmos - Coding for the classroom
+=====================================
 
-CodeCosmos is a programming environment for classroom use.
+CodeCosmos is a browser-based programming environment for classroom use.
