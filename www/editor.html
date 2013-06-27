@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CodeMirror: Linter Demo</title>
+    <link rel="stylesheet" href="static/source-code-pro/stylesheet.css">
+    <link rel="stylesheet" href="static/anonymous-pro/stylesheet.css">
+    <link rel="stylesheet" href="static/codemirror/lib/codemirror.css">
+    <script src="static/codemirror/lib/codemirror.js"></script>
+    <script src="static/codemirror/mode/javascript/javascript.js"></script>
+    <script src="static/jshint/jshint-2.1.4.js"></script>
+
+    <link rel="stylesheet" href="static/codemirror/addon/lint/lint.css">
+    <script src="static/codemirror/addon/lint/lint.js"></script>
+    <script src="static/codemirror/addon/lint/javascript-lint.js"></script>
+
+    <link rel="stylesheet" href="static/codemirror/addon/hint/show-hint.css">
+    <script src="static/codemirror/addon/hint/show-hint.js"></script>
+    <script src="static/codemirror/addon/hint/javascript-hint.js"></script>
+
+    <script src="static/codemirror/addon/edit/matchbrackets.js"></script>
+
+    <script src="static/esprima/esprima.js"></script>
+    <script src="static/escodegen/escodegen.browser.js"></script>
+
+    <style type="text/css">
+      body { margin: 0; padding: 0; height: 100%; }
+      .CodeMirror { border: 1px solid black; height: 100%;
+      }
+      #code    { position: absolute; width: 50%; top:0px; bottom: 2px;}
+      #display { position: absolute; left: 50%; top: 0px; bottom:2px; right: 2px; }
+      #sandbox { background-color: #ccc; border: 1px solid blue; width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <section id="code"><textarea id="code-js">
+var option = 1;
+processing.setup = function () {
+  processing.size(400, 400);
+  processing.smooth();
+  processing.noFill();
+  processing.noLoop();
+};
+processing.draw = function () {
+  processing.background(255);
+  var x;
+  var y;
+  var width = processing.width;
+  var height = processing.height;
+  var line = processing.line;
+  var ellipse = processing.ellipse;
+  var map = processing.map;
+  var TWO_PI = processing.TWO_PI;
+  var PI = processing.PI;
+  var arc = processing.arc;
+  if (option === 1) {
+    // Option 1: Stitches
+    for (x = 50; x <= width - 50; x += 20) {
+      for (y = 50; y <= height - 50; y += 20) {
+        line(x - 5, y - 5, x + 5, y + 5);
+        line(x + 5, y - 5, x - 5, y + 5);
+      }
+    }
+  } else if (option === 2) {
+    // Option 2: Perspective
+    for (x = 50; x <= width - 50; x += 20) {
+      for (y = 50; y <= height - 50; y += 20) {
+        line(x, y, width/2, height/2);
+      }
+    }
+  } else if (option === 3) {
+    // Option 3: Overlapping circles
+    for (x = 50; x <= width - 50; x += 20) {
+      for (y = 50; y <= height - 50; y += 20) {
+        ellipse(x, y, 40, 40);
+      }
+    }
+  } else if (option === 4) {
+    // Option 4: Rotating arcs
+    var count = 120;
+    for (x = 50; x <= width - 50; x += 20) {
+      for (y = 50; y <= height - 50; y += 20) {
+        var s = map(count, 120, 0, 0, TWO_PI * 2);
+        arc(x, y, 14, 14, s, s + PI);
+        count--;
+      }
+    }
+  } else if (option === 5) {
+    // Option 5: Groups of 5
+    for (x = 50; x < width - 50; x += 20) {
+      for (y = 50; y < height - 50; y += 20) {
+        for (var i = 0; i < 16; i += 4) {
+          line(x + i, y, x + i, y + 12);
+        }
+        line(x, y, x + 12 ,y + 12);
+      }
+    }
+  }
+    };
+processing.mousePressed = function () {
+  option++;
+  if (option > 5) {
+    option = 1;
+  }
+  processing.redraw();
+};</textarea></section>
+      <section id="display">
+      <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
+      </section>
+    </div>
+<script>
+  'use strict';
+  var batchTime = 200;
+  var nextBatch = setTimeout(function(){}, 0);
+  CodeMirror.commands.autocomplete = function(cm) {
+    CodeMirror.showHint(
+      cm,
+      CodeMirror.javascriptHint,
+      {completeSingle: false});
+  };
+  var editor = CodeMirror.fromTextArea(document.getElementById("code-js"), {
+    lineNumbers: true,
+    mode: "javascript",
+    gutters: ["CodeMirror-lint-markers"],
+    extraKeys: {"Alt-Space": "autocomplete"},
+    matchBrackets: true,
+    lineWrapping: true,
+    lintWith: CodeMirror.javascriptValidatorWithOptions(null)
+  });
+  var sandboxWindow = document.getElementById('sandbox').contentWindow;
+  var receiveMessage = function (event) {
+    if (event.source === sandboxWindow && event.data === 'sandboxLoaded') {
+      updateSandbox(editor.getValue(), sandboxWindow);
+      editor.on('change', onChange);
+    }
+  };
+  var onChange = function (cm, change) {
+    clearTimeout(nextBatch);
+    nextBatch = setTimeout(updateSandbox, batchTime);
+  };
+  var updateSandbox = function () {
+    var code = editor.getValue();
+    if (editor.options.lintWith(code).length === 0) {
+      sandboxWindow.postMessage(editor.getValue(), '*');
+    }
+  };
+  window.addEventListener('message', receiveMessage, false);
+  document.getElementById('sandbox').src = 'sandbox.html';
+</script>
+
+  </body>
+</html>
