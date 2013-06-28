@@ -1,7 +1,6 @@
 'use strict';
 var CodeMirror = window.CodeMirror;
-var batchTime = 200;
-var nextBatch = null;
+var lintTime = 500;
 var sandboxWindow = document.getElementById('sandbox').contentWindow;
 CodeMirror.commands.autocomplete = function(cm) {
   CodeMirror.showHint(
@@ -9,29 +8,42 @@ CodeMirror.commands.autocomplete = function(cm) {
     CodeMirror.javascriptHint,
     {completeSingle: false});
 };
+var maybeUpdateSandbox = function (cm, code, errors) {
+  if (errors.length === 0) {
+    sandboxWindow.postMessage(code, '*');
+  }
+};
+var smartIndentAuto = function (cm) {
+  // this indents more like Emacs
+  cm.indentSelection("smart");
+  if (!cm.somethingSelected()) {
+    var pos = cm.getCursor();
+    var spaces = cm.getLine(pos.line).match(/\s*/)[0].length;
+    if (pos.ch < spaces) {
+      cm.setCursor(pos.line, spaces);
+    }
+  }
+};
+var lintOptions = {
+  getAnnotations: CodeMirror.ccAsyncJavascriptValidator,
+  async: true,
+  delay: lintTime,
+  callback: null};
 var editor = CodeMirror.fromTextArea(document.getElementById("code-js"), {
   lineNumbers: true,
   mode: "javascript",
   gutters: ["CodeMirror-lint-markers"],
-  extraKeys: {"Alt-Space": "autocomplete"},
+  extraKeys: { "Alt-Space": "autocomplete"
+             , "Tab": smartIndentAuto },
   matchBrackets: true,
   lineWrapping: true,
-  lintWith: CodeMirror.javascriptValidatorWithOptions(null)
+  lintWith: lintOptions
 });
 var receiveMessage = function (event) {
   if (event.source === sandboxWindow && event.data === 'sandboxLoaded') {
-    updateSandbox(editor.getValue(), sandboxWindow);
-    editor.on('change', onChange);
-  }
-};
-var onChange = function (cm, change) {
-  window.clearTimeout(nextBatch);
-  nextBatch = window.setTimeout(updateSandbox, batchTime);
-};
-var updateSandbox = function () {
-  var code = editor.getValue();
-  if (editor.options.lintWith(code).length === 0) {
-    sandboxWindow.postMessage(editor.getValue(), '*');
+    lintOptions.callback = maybeUpdateSandbox;
+    // force it to run once after we're connected
+    lintOptions.getAnnotations(editor, function (cm, res) {}, lintOptions) ;
   }
 };
 window.addEventListener('message', receiveMessage, false);

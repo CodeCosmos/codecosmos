@@ -15,17 +15,69 @@ var receiveMessage = function (event) {
   pi = new Processing('pjs', sketchProc);
 };
 
-var transformCode = function (code) {
-  return ['"use strict";',
-          'var __ctr = 0, __maxctr = 30000, __cont = true;',
-          instrumentCode(code),
-          '(function () {',
-          'processing.exit = (function (exit) { return function () { __cont = false; return exit.apply(this, arguments); } })(processing.exit);',
-          'var r = function () { __ctr = 0; if (__cont) { window.requestAnimationFrame(r); } };',
-          'window.requestAnimationFrame(r);',
-          '})();'].join('');
+// Don't obfuscate this! We use toString() on it!
+var processingWrapper = function (processing, $instrumentedCode) {
+  'use strict';
+  if (!processing) {
+    return;
+  }
+  var __ctr = 0;
+  var __maxctr = 30000;
+  var __cont = true;
+  var __f = $instrumentedCode;
+  var __resetCounter = function () {
+    __ctr = 0;
+    if (__cont) {
+      window.requestAnimationFrame(__resetCounter);
+    }
+  };
+  var __setup = function () {
+    processing.size(window.innerWidth, window.innerHeight);
+    processing.background(255);
+    processing.smooth();
+    processing.noLoop();
+  };
+  var __wrap = function (a, b) {
+    if (b && a !== b) {
+      return function () {
+        a.apply(this, arguments);
+        return b.apply(this, arguments);
+      };
+    } else {
+      return a;
+    }
+  };
+  window.onresize = function () {
+    if (processing && processing.setup) {
+      processing.setup(); processing.redraw();
+    }
+  };
+  try {
+    __setup();
+    __f();
+    processing.setup = __wrap(__setup, processing.setup);
+    if (processing.draw === undefined) {
+      processing.draw = __f;
+    }
+    window.requestAnimationFrame(__resetCounter);
+  } catch (err) {
+    window.console.log(err);
+  }
 };
-var injectStatement = esprima.parse('if (++__ctr >= __maxctr) { __cont = false; throw new Error("Script ran for too long"); }').body[0];
+  
+var extractCode = function (fn) {
+  var code = fn.toString();
+  return code.substring(code.indexOf('{') + 1, code.lastIndexOf('}'));
+};
+var transformCode = function (code) {
+  var $f = 'function(){' + instrumentCode(code) + '}';
+  return extractCode(processingWrapper).replace('$instrumentedCode', $f);
+};
+var injectStatement = esprima.parse(extractCode(function (__ctr, __maxctr, __cont) {
+  if (++__ctr >= __maxctr) {
+    __cont = false;
+    throw new Error("Script ran for too long"); }
+})).body[0];
 var instrumentCode = function (code) {
   var ast = esprima.parse(code);
   var edits = [];
