@@ -20,13 +20,10 @@
 
     <script src="static/codemirror/addon/edit/matchbrackets.js"></script>
 
-    <script src="static/esprima/esprima.js"></script>
-    <script src="static/escodegen/escodegen.browser.js"></script>
-
     <style type="text/css">
       body { margin: 0; padding: 0; height: 100%; }
-      .CodeMirror { border: 1px solid black; height: 100%;
-      }
+      .CodeMirror { border: 1px solid black; height: 100%; }
+      div.CodeMirror span.CodeMirror-matchingbracket { background-color: #00ffff; color: #000; }
       #code    { position: absolute; width: 50%; top:0px; bottom: 2px;}
       #display { position: absolute; left: 50%; top: 0px; bottom:2px; right: 2px; }
       #sandbox { background-color: #ccc; border: 1px solid blue; width: 100%; height: 100%; }
@@ -97,7 +94,7 @@ processing.draw = function () {
       }
     }
   }
-    };
+};
 processing.mousePressed = function () {
   option++;
   if (option > 5) {
@@ -109,45 +106,6 @@ processing.mousePressed = function () {
       <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
       </section>
     </div>
-<script>
-  'use strict';
-  var batchTime = 200;
-  var nextBatch = setTimeout(function(){}, 0);
-  CodeMirror.commands.autocomplete = function(cm) {
-    CodeMirror.showHint(
-      cm,
-      CodeMirror.javascriptHint,
-      {completeSingle: false});
-  };
-  var editor = CodeMirror.fromTextArea(document.getElementById("code-js"), {
-    lineNumbers: true,
-    mode: "javascript",
-    gutters: ["CodeMirror-lint-markers"],
-    extraKeys: {"Alt-Space": "autocomplete"},
-    matchBrackets: true,
-    lineWrapping: true,
-    lintWith: CodeMirror.javascriptValidatorWithOptions(null)
-  });
-  var sandboxWindow = document.getElementById('sandbox').contentWindow;
-  var receiveMessage = function (event) {
-    if (event.source === sandboxWindow && event.data === 'sandboxLoaded') {
-      updateSandbox(editor.getValue(), sandboxWindow);
-      editor.on('change', onChange);
-    }
-  };
-  var onChange = function (cm, change) {
-    clearTimeout(nextBatch);
-    nextBatch = setTimeout(updateSandbox, batchTime);
-  };
-  var updateSandbox = function () {
-    var code = editor.getValue();
-    if (editor.options.lintWith(code).length === 0) {
-      sandboxWindow.postMessage(editor.getValue(), '*');
-    }
-  };
-  window.addEventListener('message', receiveMessage, false);
-  document.getElementById('sandbox').src = 'sandbox.html';
-</script>
-
+    <script src="js/editor.js"></script>
   </body>
 </html>
