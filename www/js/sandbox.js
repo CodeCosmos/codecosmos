@@ -1,3 +1,5 @@
+// Don't obfuscate this file! We depend on the toString() of functions!
+
 'use strict';
 var sketchProc = function () {};
 var esprima = window.esprima;
@@ -15,7 +17,6 @@ var receiveMessage = function (event) {
   pi = new Processing('pjs', sketchProc);
 };
 
-// Don't obfuscate this! We use toString() on it!
 var processingWrapper = function (processing, $instrumentedCode) {
   'use strict';
   if (!processing) {
@@ -34,8 +35,6 @@ var processingWrapper = function (processing, $instrumentedCode) {
   var __setup = function () {
     processing.size(window.innerWidth, window.innerHeight);
     processing.background(255);
-    processing.smooth();
-    processing.noLoop();
   };
   var __wrap = function (a, b) {
     if (b && a !== b) {
@@ -53,6 +52,7 @@ var processingWrapper = function (processing, $instrumentedCode) {
     }
   };
   try {
+    processing.noLoop();
     __setup();
     __f();
     processing.setup = __wrap(__setup, processing.setup);
@@ -69,15 +69,18 @@ var extractCode = function (fn) {
   var code = fn.toString();
   return code.substring(code.indexOf('{') + 1, code.lastIndexOf('}'));
 };
+
 var transformCode = function (code) {
   var $f = 'function(){' + instrumentCode(code) + '}';
   return extractCode(processingWrapper).replace('$instrumentedCode', $f);
 };
+
 var injectStatement = esprima.parse(extractCode(function (__ctr, __maxctr, __cont) {
   if (++__ctr >= __maxctr) {
     __cont = false;
     throw new Error("Script ran for too long"); }
 })).body[0];
+
 var instrumentCode = function (code) {
   var ast = esprima.parse(code);
   var edits = [];
