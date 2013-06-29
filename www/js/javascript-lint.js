@@ -1,5 +1,5 @@
 // Modified version of https://github.com/marijnh/CodeMirror/blob/master/addon/lint/javascript-lint.js
-(function() {
+(function(window) {
   'use strict';
   var JSHINT = window.JSHINT;
   var CodeMirror = window.CodeMirror;
@@ -13,19 +13,25 @@
                  "Unmatched ", " and instead saw", " is not defined",
                  "Unclosed string", "Stopping, unable to continue" ];
 
-  var options = { bitwise: false
-                , forin: false
-                , latedef: true
-                , noarg: true
-                , undef: true
-                , strict: false
-                , funcscope: true
-                , globalstrict: true
-                , laxcomma: true
-                , browser: true
-                };
-  var globals = { processing: false
-                , console: false };
+  var options = {
+    bitwise: false,
+    forin: false,
+    latedef: true,
+    noarg: true,
+    undef: true,
+    strict: false,
+    funcscope: true,
+    globalstrict: true,
+    laxcomma: true,
+    browser: true
+  };
+  var globals = {
+    processing: false,
+    console: false,
+    sc: false,
+    timbre: false,
+    T: false
+  };
 
   function validator(text, options, globals) {
     JSHINT(text, options, globals);
@@ -85,6 +91,21 @@
   }
 
   function parseErrors(errors, output) {
+    var pushTabPositions = function (tabpositions, item, index) {
+      if (item === '\t') {
+        // First col is 1 (not 0) to match error
+        // positions
+        tabpositions.push(index + 1);
+      }
+      return tabpositions;
+    };
+    var updateTabPositions = function (pos, tabposition) {
+      if (pos > tabposition) {
+        return pos - 1;
+      } else {
+        return pos;
+      }
+    };
     for ( var i = 0; i < errors.length; i++) {
       var error = errors[i];
       if (error) {
@@ -103,26 +124,18 @@
           // Tab positions are computed once per line and cached
           var tabpositions = linetabpositions[error.line];
           if (!tabpositions) {
-            var evidence = error.evidence;
-            tabpositions = [];
             // ugggh phantomjs does not like this
             // forEachChar(evidence, function(item, index) {
-            Array.prototype.forEach.call(evidence, function(item,
-                                                            index) {
-              if (item === '\t') {
-                // First col is 1 (not 0) to match error
-                // positions
-                tabpositions.push(index + 1);
-              }
-            });
+            tabpositions = Array.prototype.reduce.call(
+              error.evidence,
+              pushTabPositions,
+              []);
             linetabpositions[error.line] = tabpositions;
           }
           if (tabpositions.length > 0) {
-            var pos = error.character;
-            tabpositions.forEach(function(tabposition) {
-              if (pos > tabposition) pos -= 1;
-            });
-            error.character = pos;
+            error.character = tabpositions.reduce(
+              updateTabPositions,
+              error.character);
           }
         }
 
@@ -148,4 +161,4 @@
       }
     }
   }
-})();
+})(window);
