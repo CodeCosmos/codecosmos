@@ -12,9 +12,9 @@
   };
   var maybeUpdateSandbox = function (cm, code, errors) {
     if (errors.length === 0) {
-      var s = angular.element('#errors').scope();
-      s.errors = [];
-      s.$apply();
+      var s = angular.element('#errors').scope().$apply(function (s) {
+        s.errors = [];
+      });
       sandboxWindow.postMessage({msg: 'exec', val: code}, '*');
     }
   };
@@ -62,20 +62,19 @@
       (err.stackHints || []).forEach(function (x) {
         window.console.log(x);
       });
-      var s = angular.element('#errors').scope();
-      s.errors = (err.stackHints || []);
-      s.name = err.name;
-      s.message = err.message;
-      s.explanation = 'got some splaining to do';
-      s.$apply();
+      angular.element('#errors').scope().$apply(function (s) {
+        s.errors = (err.stackHints || []);
+        s.name = err.name;
+        s.message = err.message;
+        s.explanation = 'got some splaining to do';
+      });
     }
   };
   window.ErrorCtrl = function ErrorCtrl($scope) {
-    $scope.hide = '';
-    $scope.type = 'NotAnError';
-    $scope.message = 'Super technical';
-    $scope.explanation = 'Something a little friendlier';
-    $scope.errors = [{name: "draw", line: 10}];
+    $scope.type = '';
+    $scope.message = '';
+    $scope.explanation = '';
+    $scope.errors = [];
   };
   window.addEventListener('message', receiveMessage, false);
   document.getElementById('sandbox').src = 'sandbox.html';
