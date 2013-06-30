@@ -1,5 +1,5 @@
 // Don't obfuscate this file! We depend on the toString() of functions!
-(function (window) {
+document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   'use strict';
   var sketchProc = function () {};
   var esprima = window.esprima;
@@ -253,18 +253,68 @@
   }
   FunctionExpression.prototype.type = Syntax.FunctionExpression;
 
-  function wrapId(node) {
+  function wrapId(node, defaultName) {
     if (node.loc) {
-      var id = (node.id || {name: '', loc: null});
+      var id = (node.id || {name: null, loc: null});
       var loc = id.loc || node.loc;
-      return new Identifier(id.name + '$' + (id.loc || node.loc).start.line);
+      var name = id.name || defaultName;
+      return new Identifier(name + '$' + loc.start.line);
     } else {
       return node.id;
     }
   }
 
   function instrumentAST(ast) {
+    var identifierStack = [];
+    function pushIdentifier(s) {
+      identifierStack[identifierStack.length - 1].push(s);
+    }
+    function popIdentifierStack() {
+      identifierStack.pop();
+    }
+    function pushIdentifierStack() {
+      identifierStack.push([]);
+    }
+    function peekLastIdentifier() {
+      var lastStackIdx = identifierStack.length - 1;
+      if (lastStackIdx >= 0) {
+        var stack = identifierStack[lastStackIdx];
+        if (stack.length) {
+          return stack[stack.length - 1];
+        }
+      }
+      return '';
+    }
+    pushIdentifierStack();
     return estraverse.replace(ast, {
+      enter: function enterAST(node) {
+        switch (node.type) {
+        case Syntax.VariableDeclarator:
+          if (node.id.type === Syntax.Identifier) {
+            pushIdentifier(node.id.name);
+          }
+          break;
+        case Syntax.MemberExpression:
+          if (node.object.type === Syntax.Identifier) {
+            var id = node.object.name;
+            if (node.property.type === Syntax.Identifier) {
+              id += '__dot__' + node.property.name;
+            }
+            pushIdentifier(id);
+          } else if (node.property.type === Syntax.Identifier) {
+            pushIdentifier(node.property.name);
+          }
+          break;
+        case Syntax.FunctionDeclaration:
+          pushIdentifierStack();
+          break;
+        case Syntax.FunctionExpression:
+          pushIdentifierStack();
+          break;
+        default: break;
+        }
+        return node;
+      },
       leave: function leaveAST(node) {
         switch (node.type) {
         case Syntax.DoWhileStatement: break;
@@ -277,12 +327,15 @@
         // modify the BlockStatement in-place to inject the instruction counter
         node.body.body.unshift(injectStatement);
         if (node.type === Syntax.FunctionExpression) {
+          popIdentifierStack();
           // __catchErrors(node)
-          node.id = wrapId(node);
+          node.id = wrapId(node, peekLastIdentifier());
           return new CallExpression(
             new Identifier("__catchErrors"),
             [node]);
-        } else if (node.type === Syntax.FunctionDeclaration) {
+        }
+        if (node.type === Syntax.FunctionDeclaration) {
+          popIdentifierStack();
           // modify the BlockStatement in-place to be
           // return __catchErrors(function id() { body });
           var funBody = node.body;
@@ -291,12 +344,13 @@
               new CallExpression(
                 new CallExpression(
                   new Identifier("__catchErrors"),
-                  [new FunctionExpression(wrapId(node), [], funBody)]),
+                  [new FunctionExpression(
+                    wrapId(node, peekLastIdentifier()),
+                    [],
+                    funBody)]),
                 []))]);
-          return node;
-        } else {
-          return node;
         }
+        return node;
       }});
   }
 
@@ -329,4 +383,4 @@
   window.sourceMap = {SourceNode: SourceNode};
   window.addEventListener('message', receiveMessage, false);
   window.parent.postMessage({msg: 'sandboxLoaded'}, '*');
-})(window);
+});

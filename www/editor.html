@@ -1,11 +1,11 @@
 <!doctype html>
-<html ng-app>
+<html>
   <head>
     <meta charset="utf-8">
     <title>CodeCosmos</title>
     <link rel="stylesheet" href="static/pure/pure-min.css">
-    <link rel="stylesheet" href="static/source-code-pro/stylesheet.css">
     <link rel="stylesheet" href="components/codemirror/lib/codemirror.css">
+    <script src="static/webfontloader/webfont.js"></script>
     <script src="components/jquery/jquery.js"></script>
     <script src="components/angular/angular.js"></script>
     <script src="components/codemirror/lib/codemirror.js"></script>
@@ -21,23 +21,35 @@
     <script src="components/codemirror/addon/hint/javascript-hint.js"></script>
 
     <script src="components/codemirror/addon/edit/matchbrackets.js"></script>
+    <script src="js/editor.js"></script>
 
     <style type="text/css">
       body { margin: 0; padding: 0; height: 100%; }
-      .CodeMirror { border: 1px solid black; height: 100%; font-family: "Source Code Pro"; box-sizing: border-box; }
+      .CodeMirror { border: 1px solid black; height: 100%; font-family: "SourceCodeProRegular"; font-size: 80%; box-sizing: border-box; }
       div.CodeMirror span.CodeMirror-matchingbracket { background-color: #00ffff; color: #000; }
+      div.CodeMirror .sandbox-error { background-color: rgba(255, 0, 0, 0.1); }
+      div.CodeMirror .sandbox-error-first { background-color: rgba(255, 0, 0, 0.15); }
       #main-menu { background-color: #eee; height: 2.5em; }
+      #main-menu ul { font-family: "UbuntuRegular"; }
+      #main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
       #container { position:absolute; top: 2.5em; bottom: 0px; width:
       100%; }
       #code { position:absolute; width: 50%; height: 100%; }
-      #display { position:absolute; width: 50%; left: 50%; height: 100%; }
+      #display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
       .hide { display: none; }
-      #errors { position: absolute; left: 0; right: 0; background-color: #eeeeee; display: none; }
+      #errors { position: absolute; left: 0; right: 0;
+      background-color: #ffffff; border: 1px solid black; display:
+      none; padding-left: 1em; }
+      #errors .icon-ambulance { color: red; text-shadow: 1px 1px #cc0000; }
       #errors.show { display: block; }
-      #errors .name {}
-      #errors .message {}
+      #errors section i { text-align: center; }
+      #errors h1, #errors h2 { color: #999999; }
+      #errors .message { }
       #errors .explanation {}
-      #sandbox { position: absolute; background-color: #ccc; border: 1px solid blue; width: 100%; height: 100%; box-sizing: border-box; }
+      #errors ul.errors { padding-left: 0; }
+      #errors ul.errors li { display: block; cursor: pointer; }
+      #errors ul.errors li span { text-decoration: underline; }
+      #sandbox { position: absolute; background-color: #ccc; border: 1px solid black; width: 100%; height: 100%; box-sizing: border-box; }
     </style>
   </head>
   <body>
@@ -45,7 +57,7 @@
       <a href="#" class="pure-menu-heading">CodeCosmos</a>
       <ul>
         <li class="pure-menu-selected"><a href="#">Home</a></li>
-        <li><a href="#">Derp1</a></li>
+        <li><a href="#">DZZT</a></li>
         <li><a href="#">Derp2</a></li>
         <li><a href="#">Derp3</a></li>
       </ul>
@@ -123,15 +135,21 @@ processing.mousePressed = function () {
           <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
         <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length}">
-          <h1 class="name">{{name}}</h1>
-          <section class="explanation">{{explanation}}</section>
-          <section class="message">{{message}}</section>
-          <ul class="errors" ng-repeat="err in errors">
-            {{err.name}}:{{err.line}}
+          <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
+          <section class="explanation">
+            <i class="icon-lightbulb icon-fixed-width"></i> {{explanation}}
+          </section>
+          <section class="message">
+            <i class="icon-bug icon-fixed-width"></i> {{message}}
+          </section>
+          <h2>Try looking for the problem here:</h2>
+          <ul class="errors">
+            <li class="icon-arrow-right" ng-repeat="err in errors">
+              <span>{{friendlyName(err.name)}} (line {{err.line}})</span>
+            </li>
           </ul>
         </div>
       </section>
     </div>
-    <script src="js/editor.js"></script>
   </body>
 </html>
