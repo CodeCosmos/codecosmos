@@ -11,6 +11,7 @@
     "estraverse": "git://github.com/Constellation/estraverse#~1.1.2-1",
     "escodegen": "git://github.com/Constellation/escodegen#~0.0.23",
     "timbre": "git://github.com/mohayonao/timbre.js#~13.05.01",
-    "screenfull": "git://github.com/sindresorhus/screenfull.js#~1.0.4"
+    "screenfull": "git://github.com/sindresorhus/screenfull.js#~1.0.4",
+    "font-awesome": "git://github.com/components/font-awesome#~3.2.0"
   }
 }
