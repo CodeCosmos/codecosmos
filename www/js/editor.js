@@ -1,6 +1,7 @@
 (function (window) {
   'use strict';
   var CodeMirror = window.CodeMirror;
+  var angular = window.angular;
   var lintTime = 500;
   var sandboxWindow = document.getElementById('sandbox').contentWindow;
   CodeMirror.commands.autocomplete = function(cm) {
@@ -11,6 +12,9 @@
   };
   var maybeUpdateSandbox = function (cm, code, errors) {
     if (errors.length === 0) {
+      var s = angular.element('#errors').scope();
+      s.errors = [];
+      s.$apply();
       sandboxWindow.postMessage({msg: 'exec', val: code}, '*');
     }
   };
@@ -58,7 +62,20 @@
       (err.stackHints || []).forEach(function (x) {
         window.console.log(x);
       });
+      var s = angular.element('#errors').scope();
+      s.errors = (err.stackHints || []);
+      s.name = err.name;
+      s.message = err.message;
+      s.explanation = 'got some splaining to do';
+      s.$apply();
     }
+  };
+  window.ErrorCtrl = function ErrorCtrl($scope) {
+    $scope.hide = '';
+    $scope.type = 'NotAnError';
+    $scope.message = 'Super technical';
+    $scope.explanation = 'Something a little friendlier';
+    $scope.errors = [{name: "draw", line: 10}];
   };
   window.addEventListener('message', receiveMessage, false);
   document.getElementById('sandbox').src = 'sandbox.html';

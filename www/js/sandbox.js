@@ -60,6 +60,8 @@
       '*');
   }
 
+  // This implements the jankiest possible "source map", where we keep an array
+  // of [generatedLine, knownSourceLine]. Seems to essentially work.
   function SourceNode(line, col, _sourceMap, generated) {
     this.line = line;
     this.col = col;
@@ -74,7 +76,7 @@
     var lastMapLine = null;
     function walk(node) {
       if (typeof(node) === "string") {
-        if (node.length > 0) {
+        if (node) {
           code.push(node);
           var matches = node.match(/\n/g);
           if (matches !== null) {
@@ -306,12 +308,8 @@
     }
     var code = event.data.val;
     var ast = instrumentAST(esprima.parse(code, {range: true, loc: true}));
-
-    window.__ast = ast;
     var genMap = escodegen.generate(ast, {sourceMap: true,
                                           sourceMapWithCode: true});
-                                          
-    window.__map = genMap.map;
     var genCode = wrapCode(genMap.code);
     var onFail = postFail.bind(null, ast, genMap.map, genCode);
     /* jshint evil:true */
