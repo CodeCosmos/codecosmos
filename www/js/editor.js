@@ -52,7 +52,12 @@
       // force it to run once after we're connected
       lintOptions.getAnnotations(editor, function (cm, res) {}, lintOptions) ;
     } else if (msg === 'error') {
-      window.console.log(event.data.val);
+      var err = event.data.val;
+      window._lastErr = err;
+      window.console.log(err);
+      (err.stackHints || []).forEach(function (x) {
+        window.console.log(x);
+      });
     }
   };
   window.addEventListener('message', receiveMessage, false);

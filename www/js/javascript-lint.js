@@ -14,6 +14,7 @@
                  "Unclosed string", "Stopping, unable to continue" ];
 
   var options = {
+    curly: true,
     bitwise: false,
     forin: false,
     latedef: true,
