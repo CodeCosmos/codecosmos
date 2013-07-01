@@ -29,7 +29,6 @@
   var globals = {
     processing: false,
     console: false,
-    sc: false,
     timbre: false,
     T: false
   };
@@ -44,14 +43,18 @@
     return result;
   }
 
-  CodeMirror.ccAsyncJavascriptValidator = function (cm, updateLinting, opts) {
+  function ccAsyncJavascriptValidator(cm, updateLinting, opts) {
     var code = cm.getValue();
     var errors = validator(code, options, globals);
     updateLinting(cm, errors);
     if (opts.callback) {
       opts.callback(cm, code, errors);
     }
+  }
+  ccAsyncJavascriptValidator.updateGlobals = function updateGlobals(f) {
+    globals = f(globals);
   };
+  CodeMirror.ccAsyncJavascriptValidator = ccAsyncJavascriptValidator;
 
   function cleanup(error) {
     // All problems are warnings by default

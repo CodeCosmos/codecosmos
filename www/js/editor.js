@@ -44,6 +44,7 @@ window.angular.element(document).ready(function () {
   };
 
   function maybeUpdateSandbox(cm, code, errors) {
+    var id = cm.changeGeneration();
     cm.operation(function () {
       while (errorMarkers.length) {
         errorMarkers.pop().clear();
@@ -53,7 +54,7 @@ window.angular.element(document).ready(function () {
       var s = angular.element('#errors').scope().$apply(function (s) {
         s.errors = [];
       });
-      sandboxWindow.postMessage({msg: 'exec', val: code}, '*');
+      sandboxWindow.postMessage({msg: 'exec', val: code, id: id}, '*');
     }
   }
 
@@ -73,19 +74,33 @@ window.angular.element(document).ready(function () {
     }
   }
 
+  function forceRun(cm) {
+    window.console.log('force run');
+    lintOptions.getAnnotations(cm, function (cm, res) {}, lintOptions);
+  }
+
   function receiveMessage(event) {
     if (event.source !== sandboxWindow) {
+      window.console.log(['event.source', event.source]);
       return;
     }
-    var msg = event.data.msg;
+    var data = event.data;
+    var msg = data.msg;
+    var id = data.id;
     if (msg === 'sandboxLoaded') {
+      lintOptions.getAnnotations.updateGlobals(function (g) {
+        data.val.forEach(function (name) {
+          g[name] = false;
+        });
+        return g;
+      });
       lintOptions.callback = maybeUpdateSandbox;
       // force it to run once after we're connected
-      lintOptions.getAnnotations(editor, function (cm, res) {}, lintOptions) ;
+      forceRun(editor);
     } else if (msg === 'error') {
-      var err = event.data.val;
+      var err = data.val;
       window._lastErr = err;
-      window.console.log(err);
+      window.console.log([msg, err, id]);
       editor.operation(function markSandboxErrors() {
         err.stackHints.forEach(function markSandboxError(hint, idx) {
           var line = hint.line - 2;
@@ -102,24 +117,28 @@ window.angular.element(document).ready(function () {
         s.message = err.message;
         s.explanation = explainError(err);
       });
+    } else if (msg === 'success') {
+      window.console.log([msg, id]);
     }
   }
 
   function explainError(err) {
     if (err.name === 'TypeError') {
       if (err.message.match(/has no method/)) {
-        return 'Tried to call a method that doesn\'t exist, check the spelling!';
+        return "Tried to call a method that doesn't exist, check the spelling!";
       } else if (err.message.match(/is not a function/)) {
-        return 'Tried to call an object that isn\'t a function, try removing the (parentheses) if it\'s just a value.';
+        return "Tried to call an object that isn't a function, try removing the (parentheses) if it's just a value.";
       } else if (err.message.match(/Cannot call method/)) {
-        return 'Tried to call a method on undefined, maybe there\'s a misspelling?';
+        return "Tried to call a method on undefined, maybe there's a misspelling?";
+      } else if (err.message.match(/Cannot set property/)) {
+        return "Make sure that you didn't end the previous line with a '.', and you don't have too many '.'s.";
       }
     } else if (err.name === 'Error') {
       if (err.message === 'Script ran for too long') {
-        return 'Check to make sure you don\'t have an infinite loop, your script is trying to freeze the browser!';
+        return "Check to make sure you don't have an infinite loop, your script is trying to freeze the browser!";
       }
     }
-    return '(sorry, no friendly explanation for this one)';
+    return '(sorry, no friendlier explanation for this one)';
   }
 
   function friendlyName(functionName) {
@@ -166,6 +185,7 @@ window.angular.element(document).ready(function () {
     gutters: ["CodeMirror-lint-markers"],
     extraKeys: {
       "Alt-Space": "autocomplete",
+      "Ctrl-R": forceRun,
       "Tab": smartIndentAuto
     },
     matchBrackets: true,
@@ -179,10 +199,18 @@ window.angular.element(document).ready(function () {
     }
   };
 
+  function finishedLoading() {
+    $('#loading').addClass('hide');
+    $('#container').addClass('show');
+  }
+
   // bootstrap sandbox
   window.addEventListener('message', receiveMessage, false);
   sandboxElem.src = 'sandbox.html';
 
   // debugging variables
   window._editor = editor;
+
+  finishedLoading();
+
 });

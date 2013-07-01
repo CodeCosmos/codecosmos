@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   var pi = new Processing('pjs', sketchProc);
   var Syntax = estraverse.Syntax;
 
+  var magicGlobals = [
+    'processing',
+    'p',
+    'timbre',
+    'T'
+  ];
+
   function searchMap(map, needle) {
     // binary search
     var lo = 0;
@@ -43,10 +50,15 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     }, []);
   }
 
-  function postFail(ast, map, genCode, err) {
-    window.parent.postMessage(
+  function postSuccess(code, id) {
+    postMessage({msg: 'success', val: code, id: id});
+  }
+
+  function postFail(id, ast, map, genCode, err) {
+    postMessage(
       {
         msg: 'error',
+        id: id,
         val: {
           name: err.name,
           message: err.message,
@@ -56,8 +68,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
           __map: map,
           __genCode: genCode
         }
-      },
-      '*');
+      });
   }
 
   // This implements the jankiest possible "source map", where we keep an array
@@ -112,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     var __maxctr = 30000;
     var __cont = true;
     var __errorHandler = false;
+    var p = processing;
     function __fail(err) {
       __cont = false;
       processing.exit();
@@ -150,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     }
     function __once() {
       processing.noLoop();
+      processing.frameRate(20);
       __clear();
       timbre.reset();
       timbre.pause();
@@ -164,6 +177,18 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
         return a;
       }
     }
+
+    function __skipFirst(f) {
+      var first = true;
+      return function () {
+        if (first) {
+          first = false;
+        } else {
+          f();
+        }
+      };
+    }
+      
     function __clear() {
       processing.background(255);
     }
@@ -178,10 +203,11 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
         return true;
       }
       __cont = false;
-      window.parent.postMessage(
-        {msg: 'error',
-         val: {url: url, message: message, line: lineNumber}},
-        '*');
+      __postFail({name: 'UnhandledError',
+                  message: message,
+                  url: url,
+                  line: lineNumber,
+                  stack: ''});
       return false;
     };
     __setup();
@@ -189,7 +215,8 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     __f();
     processing.setup = __wrap(__setup, processing.setup);
     if (processing.draw === undefined) {
-      processing.draw = __wrap(__clear, __f);
+      // hook redraw for resize events
+      processing.draw = __skipFirst(__f);
     }
     window.requestAnimationFrame(__resetCounter);
   }
@@ -204,7 +231,6 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   }
 
   var processingTemplate = makeOneLine(extractCode(processingWrapper));
-  window.processingTemplate = processingTemplate;
 
   function wrapCode(code) {
     // avoid interpretation of the replacement string by using a fun.
@@ -360,12 +386,13 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
         event.data.msg !== 'exec') {
       return;
     }
+    var id = event.data.id;
     var code = event.data.val;
     var ast = instrumentAST(esprima.parse(code, {range: true, loc: true}));
     var genMap = escodegen.generate(ast, {sourceMap: true,
                                           sourceMapWithCode: true});
     var genCode = wrapCode(genMap.code);
-    var onFail = postFail.bind(null, ast, genMap.map, genCode);
+    var onFail = postFail.bind(null, id, ast, genMap.map, genCode);
     /* jshint evil:true */
     sketchProc = new Function(
       '__postFail',
@@ -374,13 +401,26 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
       'processing',
       genCode);
     /* jshint evil:false */
+    var tinyLogDiv = document.querySelector('html > div > div[title="Close Log"]');
+    if (tinyLogDiv && tinyLogDiv.click) {
+      tinyLogDiv.click();
+    }
     pi.exit();
     pi = new Processing(
       'pjs',
       sketchProc.bind(null, onFail, timbre, T));
+    // if we got here, it succeeded
+    postSuccess(code, id);
   }
 
+  function postMessage(msg) {
+    window.parent.postMessage(msg, '*');
+  }
+
+  // This is used by escodegen
   window.sourceMap = {SourceNode: SourceNode};
+
+  // start listening for orders and let the editor know we've started
   window.addEventListener('message', receiveMessage, false);
-  window.parent.postMessage({msg: 'sandboxLoaded'}, '*');
+  postMessage({msg: 'sandboxLoaded', val: magicGlobals});
 });

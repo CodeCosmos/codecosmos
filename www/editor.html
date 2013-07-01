@@ -32,8 +32,46 @@
       #main-menu { background-color: #eee; height: 2.5em; }
       #main-menu ul { font-family: "UbuntuRegular"; }
       #main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
-      #container { position:absolute; top: 2.5em; bottom: 0px; width:
-      100%; }
+
+      #main-menu .right-menu { float: right; clear: both; }
+
+      @-webkit-keyframes loading-pulse {
+        from { opacity: 0.25; }
+        to { opacity: 1.0; }
+      }
+      @keyframes loading-pulse {
+        from { opacity: 0.25; }
+        to { opacity: 1.0; }
+      }
+      #loading {
+        position: absolute;
+        top: 2.5em;
+        bottom: 0px;
+        width: 100%;
+      }
+      #loading div {
+        display: table;
+        text-align: center;
+        width: 100%;
+        height: 100%;
+      }
+      #loading h1 {
+        height: 100%;
+        width: 100%;
+        display: table-cell;
+        vertical-align: middle;
+        -webkit-animation-name: loading-pulse;
+        -webkit-animation-duration: 2s;
+        -webkit-animation-direction: alternate;
+        -webkit-animation-iteration-count: infinite;
+        animation-name: loading-pulse;
+        animation-duration: 2s;
+        animation-direction: alternate;
+        animation-iteration-count: infinite;
+      }
+
+      #container.show { display: block; }
+      #container { position:absolute; top: 2.5em; bottom: 0px; width: 100%; display: none; }
       #code { position:absolute; width: 50%; height: 100%; }
       #display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
       .hide { display: none; }
@@ -56,80 +94,14 @@
     <div id="main-menu" class="pure-menu pure-menu-open pure-menu-horizontal">
       <a href="#" class="pure-menu-heading">CodeCosmos</a>
       <ul>
-        <li class="pure-menu-selected"><a href="#">Home</a></li>
-        <li><a href="#">DZZT</a></li>
-        <li><a href="#">Derp2</a></li>
-        <li><a href="#">Derp3</a></li>
+        <li class="pure-menu-selected"><a href="#">LeftMenu</a></li>
       </ul>
+      <div class="right-menu">
+        <button class="pure-button"><i class="icon-refresh"></i></button>
+      </div>
     </div>
-<div id="container">
-
-      <section id="code"><textarea id="code-js">
-var option = 1;
-processing.draw = function () {
-  processing.noFill();
-  processing.background(255);
-  var x;
-  var y;
-  var width = processing.width;
-  var height = processing.height;
-  var line = processing.line;
-  var ellipse = processing.ellipse;
-  var map = processing.map;
-  var TWO_PI = processing.TWO_PI;
-  var PI = processing.PI;
-  var arc = processing.arc;
-  if (option === 1) {
-    // Option 1: Stitches
-    for (x = 50; x <= width - 50; x += 20) {
-      for (y = 50; y <= height - 50; y += 20) {
-        line(x - 5, y - 5, x + 5, y + 5);
-        line(x + 5, y - 5, x - 5, y + 5);
-      }
-    }
-  } else if (option === 2) {
-    // Option 2: Perspective
-    for (x = 50; x <= width - 50; x += 20) {
-      for (y = 50; y <= height - 50; y += 20) {
-        line(x, y, width/2, height/2);
-      }
-    }
-  } else if (option === 3) {
-    // Option 3: Overlapping circles
-    for (x = 50; x <= width - 50; x += 20) {
-      for (y = 50; y <= height - 50; y += 20) {
-        ellipse(x, y, 40, 40);
-      }
-    }
-  } else if (option === 4) {
-    // Option 4: Rotating arcs
-    var count = 120;
-    for (x = 50; x <= width - 50; x += 20) {
-      for (y = 50; y <= height - 50; y += 20) {
-        var s = map(count, 120, 0, 0, TWO_PI * 2);
-        arc(x, y, 14, 14, s, s + PI);
-        count--;
-      }
-    }
-  } else if (option === 5) {
-    // Option 5: Groups of 5
-    for (x = 50; x < width - 50; x += 20) {
-      for (y = 50; y < height - 50; y += 20) {
-        for (var i = 0; i < 16; i += 4) {
-          line(x + i, y, x + i, y + 12);
-        }
-        line(x, y, x + 12 ,y + 12);
-      }
-    }
-  }
-};
-processing.mousePressed = function () {
-  option++;
-  if (option > 5) {
-    option = 1;
-  }
-  processing.redraw();
-};</textarea></section>
+    <div id="container">
+      <section id="code"><textarea id="code-js"></textarea></section>
       <section id="display">
         <div id="sandbox-ctr">
           <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
@@ -150,6 +122,9 @@ processing.mousePressed = function () {
           </ul>
         </div>
       </section>
+    </div>
+    <div id="loading">
+      <div><h1>Loading&hellip;</h1></div>
     </div>
   </body>
 </html>
