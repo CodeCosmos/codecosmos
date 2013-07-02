@@ -45,7 +45,7 @@
       }
       #loading {
         position: absolute;
-        top: 2.5em;
+        top: 0px;
         bottom: 0px;
         width: 100%;
       }
@@ -91,9 +91,18 @@
     </style>
   </head>
   <body>
-    <div id="main-menu" class="pure-menu pure-menu-open pure-menu-horizontal">
+    <div id="main-menu" ng-controller="MenuCtrl" class="pure-menu pure-menu-open pure-menu-horizontal">
       <a href="#" class="pure-menu-heading">CodeCosmos</a>
       <ul>
+        <li class="pure-menu"><input type="text" name="filename" placeholder="Unsaved&hellip;"/></li>
+        <li class="pure-menu">
+        <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
+          <option value="">Load&hellip;</option>
+          <optgroup ng-repeat="group in groups" label="{{group.name}}">
+            <option ng-repeat="file in group.files" value="{{ toJson(file) }}">{{file.name}}</option>
+          </optgroup>
+        </select>
+        </li>
         <li class="pure-menu-selected"><a href="#">LeftMenu</a></li>
       </ul>
       <div class="right-menu">

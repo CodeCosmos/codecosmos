@@ -151,6 +151,43 @@ window.angular.element(document).ready(function () {
     }
   }
 
+  // angular menu bootstrap
+  function MenuCtrl($scope, $http, $cacheFactory) {
+    window.console.log('MenuCtrl');
+    var $httpCache = $cacheFactory.get('$http');
+    $scope.toJson = angular.toJson;
+    $scope.loading_sentinel = '';
+    $scope.loaded_file = $scope.loading_sentinel;
+    $scope.groups = [
+      {name: 'My Code',
+       files: []}];
+    $scope.loadFile = function loadFile() {
+      if ($scope.loaded_file !== $scope.loading_sentinel) {
+        var file = angular.fromJson($scope.loaded_file);
+        $http({method: 'GET', url: file.url, cache: $httpCache}).
+          success(function loadSuccess(data, status) {
+            loadDocument({code: data});
+          }).
+          error(function loadError(data, status) {
+            window.console.log(['load error :(', data, status]);
+          });
+        $scope.loaded_file = $scope.loading_sentinel;
+      }
+    };
+    $http({method: 'GET', url: 'data/bootstrap.json', cache: $httpCache}).
+      success(function bootstrapSuccess(data, status) {
+        $scope.groups.push(data);
+        finishedLoading();
+      }).
+      error(function bootstrapError(data, status) {
+        // TODO: This is not graceful at all! :(
+        $('#loading h1').text("Connectivity problem, please try reloading :(");
+      });
+  }
+  angular.module('menuModule', [])
+    .controller('MenuCtrl', MenuCtrl);
+  angular.bootstrap('#main-menu', ['menuModule']);
+
   // angular errors bootstrap
   function ErrorCtrl($scope) {
     $scope.type = '';
@@ -204,6 +241,13 @@ window.angular.element(document).ready(function () {
     $('#container').addClass('show');
   }
 
+  function loadDocument(val) {
+    editor.operation(function loadDocumentOp() {
+      editor.setValue(val.code || '');
+      editor.setHistory(val.history || {'done': [], 'undone': []});
+    });
+  }
+
   // bootstrap sandbox
   window.addEventListener('message', receiveMessage, false);
   sandboxElem.src = 'sandbox.html';
@@ -211,6 +255,5 @@ window.angular.element(document).ready(function () {
   // debugging variables
   window._editor = editor;
 
-  finishedLoading();
-
+  // The menu controller will take care of bootstrapping for now.
 });
