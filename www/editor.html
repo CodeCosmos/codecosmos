@@ -11,6 +11,7 @@
     <script src="components/codemirror/lib/codemirror.js"></script>
     <script src="components/codemirror/mode/javascript/javascript.js"></script>
     <script src="static/jshint/jshint-2.1.4.js"></script>
+    <script src="static/pouchdb/pouchdb-nightly.js"></script>
 
     <link rel="stylesheet" href="components/codemirror/addon/lint/lint.css">
     <script src="components/codemirror/addon/lint/lint.js"></script>
@@ -32,8 +33,16 @@
       #main-menu { background-color: #eee; height: 2.5em; }
       #main-menu ul { font-family: "UbuntuRegular"; }
       #main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
-
-      #main-menu .right-menu { float: right; clear: both; }
+      #main-menu a.tool { padding: 5px 3px; color: #333333; }
+      #main-menu .right-menu { 
+      float: right;
+      }
+      #main-menu .right-menu i {
+      vertical-align: middle;
+      padding: 5px 3px;
+      line-height: 1.5em;
+      font-size: 100%;
+      }
 
       @-webkit-keyframes loading-pulse {
         from { opacity: 0.25; }
@@ -75,6 +84,7 @@
       #code { position:absolute; width: 50%; height: 100%; }
       #display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
       .hide { display: none; }
+      #main-menu .hide { display: none; }
       #errors { position: absolute; left: 0; right: 0;
       background-color: #ffffff; border: 1px solid black; display:
       none; padding-left: 1em; }
@@ -94,7 +104,9 @@
     <div id="main-menu" ng-controller="MenuCtrl" class="pure-menu pure-menu-open pure-menu-horizontal">
       <a href="#" class="pure-menu-heading">CodeCosmos</a>
       <ul>
-        <li class="pure-menu"><input type="text" name="filename" placeholder="Unsaved&hellip;"/></li>
+        <li class="pure-menu">
+          <input type="text" name="filename" placeholder="{{ placeholder }}" ng-model="filename" />
+        </li>
         <li class="pure-menu">
         <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
           <option value="">Load&hellip;</option>
@@ -103,11 +115,16 @@
           </optgroup>
         </select>
         </li>
-        <li class="pure-menu-selected"><a href="#">LeftMenu</a></li>
+        <li><a href="#" class="icon-copy icon-large tool" title="Make a copy of this code"></a></li>
+        <li><a href="#" class="icon-trash icon-large tool" title="Throw away this code"></a></li>
+        <li ng-class="{hide: running}"><a href="#" class="icon-play icon-large tool" title="Run this code"></a></li>
+        <li ng-class="{hide: !running}"><a href="#" class="icon-pause icon-large tool" title="Pause this code"></a></li>
       </ul>
-      <div class="right-menu">
-        <button class="pure-button"><i class="icon-refresh"></i></button>
-      </div>
+      <ul class="right-menu">
+        <li><a href="#" class="icon-smile icon-large tool"></a></li>
+        <li><a href="#" class="icon-meh icon-large tool"></a></li>
+        <li><a href="#" class="icon-frown icon-large tool"></a></li>
+      </ul>
     </div>
     <div id="container">
       <section id="code"><textarea id="code-js"></textarea></section>

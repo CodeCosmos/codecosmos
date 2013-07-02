@@ -27,14 +27,17 @@ window.angular.element(document).ready(function () {
   'use strict';
   var WebFont = window.WebFont;
   var CodeMirror = window.CodeMirror;
+  var Pouch = window.Pouch;
   var angular = window.angular;
-  var lintTime = 500;
   var $ = window.jQuery;
+  var lintTime = 500;
+  var db = new Pouch('local-code');
   var sandboxElem = document.getElementById('sandbox');
   var sandboxWindow = sandboxElem.contentWindow;
   var errorMarkers = [];
   // initialized later
   var lintOptions, editor;
+
 
   CodeMirror.commands.autocomplete = function autocomplete(cm) {
     CodeMirror.showHint(
@@ -155,6 +158,8 @@ window.angular.element(document).ready(function () {
   function MenuCtrl($scope, $http, $cacheFactory) {
     window.console.log('MenuCtrl');
     var $httpCache = $cacheFactory.get('$http');
+    $scope.running = true;
+    $scope.placeholder = 'Unsaved\u2026';
     $scope.toJson = angular.toJson;
     $scope.loading_sentinel = '';
     $scope.loaded_file = $scope.loading_sentinel;
@@ -164,13 +169,18 @@ window.angular.element(document).ready(function () {
     $scope.loadFile = function loadFile() {
       if ($scope.loaded_file !== $scope.loading_sentinel) {
         var file = angular.fromJson($scope.loaded_file);
-        $http({method: 'GET', url: file.url, cache: $httpCache}).
-          success(function loadSuccess(data, status) {
-            loadDocument({code: data});
-          }).
-          error(function loadError(data, status) {
-            window.console.log(['load error :(', data, status]);
-          });
+        if (file.url) {
+          // recipes
+          $http({method: 'GET', url: file.url, cache: $httpCache}).
+            success(function loadSuccess(data, status) {
+              loadDocument({code: data});
+            }).
+            error(function loadError(data, status) {
+              window.console.log(['load error :(', data, status]);
+            });
+        } else if (file._id) {
+          // TODO: pouchdb
+        }
         $scope.loaded_file = $scope.loading_sentinel;
       }
     };
