@@ -167,30 +167,33 @@ window.angular.element(document).ready(function () {
     $scope.placeholder = 'Unsaved\u2026';
     $scope.toJson = angular.toJson;
     $scope.loading_sentinel = '';
+    $scope.filename = '';
     $scope.loaded_file = $scope.loading_sentinel;
     $scope.myCode = {name: 'My Code',
                      files: []};
     $scope.groups = [$scope.myCode];
     $scope.currentDoc = null;
+    function scoped(fn) {
+      return function scoped$wrapper() {
+        var args = Array.prototype.slice.apply(arguments);
+        $scope.$apply(function scoped$apply() {
+          return fn.apply(null, args);
+        });
+      };
+    }
     function newestFirst(a, b) {
       return b.now - a.now;
     }
-    CodeDB.getDocList().done(function docSuccess(docs) {
-      docs.sort(newestFirst);
-      $scope.$apply(function updateMenu(s) {
-        s.myCode.files = docs;
-      });
-    }).fail(genericFail);
-    function updateDoc($scope, doc) {
+    function updateDoc(doc) {
       window.console.log(['updateDoc', doc]);
       var oldDoc = $scope.currentDoc;
       // update the name
       if (oldDoc === null || oldDoc._id === doc._id) {
         $scope.currentDoc = doc;
       }
-      updateDocMenu($scope, doc);
+      updateDocMenu(doc);
     }
-    function updateDocMenu($scope, doc) {
+    function updateDocMenu(doc) {
       // update the menu, this has to happen in-place
       var files = $scope.myCode.files;
       var id = doc._id;
@@ -219,19 +222,17 @@ window.angular.element(document).ready(function () {
       if (!doc && !doc._id) {
         return;
       }
-      CodeDB.remove(doc).done(function removeDocSuccess(response) {
-        $scope.$apply(function (s) {
-          var files = s.myCode.files;
-          for (var i = 0; i < files.length; i++) {
-            if (files[i]._id === doc._id) {
-              files.splice(i, 1);
-              break;
-            }
+      CodeDB.remove(doc).done(scoped(function removeDocSuccess(response) {
+        var files = $scope.myCode.files;
+        for (var i = 0; i < files.length; i++) {
+          if (files[i]._id === doc._id) {
+            files.splice(i, 1);
+            break;
           }
-        });
+        }
         // this deletes it from the UI
         copyDoc();
-      }).fail(genericFail);
+      })).fail(genericFail);
     }
     $scope.trashDoc = trashDoc;
     $scope.$watch('filename', function watchFilenameChange(name, oldName) {
@@ -244,20 +245,14 @@ window.angular.element(document).ready(function () {
       window.console.log(['filenameChanged', name, oldName, doc]);
       doc.name = name;
       doc.now = Date.now();
-      doc = angular.copy(doc);
       if (doc._id) {
-        CodeDB.updateDoc(doc).done(function updateDone(doc) {
-          $scope.$apply(function (s) {
-            updateDoc(s, doc);
-          });
-        }).fail(genericFail);
+        CodeDB.updateDoc(doc)
+          .done(scoped(updateDoc))
+          .fail(genericFail);
       } else {
-        var codeAndHistory = getEditorState(editor);
-        CodeDB.createDoc(doc, getEditorState(editor)).done(function createDocDone(doc) {
-          $scope.$apply(function (s) {
-            updateDoc(s, doc);
-          });
-        }).fail(genericFail);
+        CodeDB.createDoc(doc, getEditorState(editor))
+          .done(scoped(updateDoc))
+          .fail(genericFail);
       }
     });
     $scope.loadFile = function loadFile() {
@@ -267,27 +262,27 @@ window.angular.element(document).ready(function () {
           // recipes
           $http({method: 'GET', url: file.url, cache: $httpCache}).
             success(function loadSuccess(data, status) {
-              $scope.$apply(function (s) {
-                s.filename = '';
-              });
+              $scope.filename = '';
               putEditorState(editor, {code: data});
             }).
             error(function loadError(data, status) {
               window.console.log(['load error :(', data, status]);
             });
         } else if (file._id) {
-          CodeDB.getCode(file).then(function (codeAndHistory) {
-            $scope.$apply(function (s) {
-              s.filename = file.name;
-              s.currentDoc = file;
-              updateDocMenu(s, file);
-              putEditorState(editor, codeAndHistory);
-            });
-          }).fail(genericFail);
+          CodeDB.getCode(file).then(scoped(function (codeAndHistory) {
+            $scope.filename = file.name;
+            $scope.currentDoc = file;
+            updateDocMenu(file);
+            putEditorState(editor, codeAndHistory);
+          })).fail(genericFail);
         }
         $scope.loaded_file = $scope.loading_sentinel;
       }
     };
+    CodeDB.getDocList().done(scoped(function docSuccess(docs) {
+      docs.sort(newestFirst);
+      $scope.myCode.files = docs;
+    })).fail(genericFail);
     $http({method: 'GET', url: 'data/bootstrap.json', cache: $httpCache}).
       success(function bootstrapSuccess(data, status) {
         $scope.groups.push(data);
