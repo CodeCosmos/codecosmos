@@ -25,19 +25,27 @@ window.WebFont.load({
 
 window.angular.element(document).ready(function () {
   'use strict';
+  var BLOB_TYPE = 'text/plain;charset=utf-8';
+  var BLOB_NAME = 'history-code-blob';
+  var Blob = window.Blob;
+  var FileReader = window.FileReader;
   var WebFont = window.WebFont;
   var CodeMirror = window.CodeMirror;
   var Pouch = window.Pouch;
   var angular = window.angular;
   var $ = window.jQuery;
   var lintTime = 500;
-  var db = new Pouch('local-code');
+  var CodeDB = window.CodeDB;
   var sandboxElem = document.getElementById('sandbox');
   var sandboxWindow = sandboxElem.contentWindow;
   var errorMarkers = [];
   // initialized later
   var lintOptions, editor;
 
+  function genericFail(err) {
+    window.console.log(["Don't know what to do with this error", err]);
+    throw err;
+  }
 
   CodeMirror.commands.autocomplete = function autocomplete(cm) {
     CodeMirror.showHint(
@@ -78,13 +86,11 @@ window.angular.element(document).ready(function () {
   }
 
   function forceRun(cm) {
-    window.console.log('force run');
     lintOptions.getAnnotations(cm, function (cm, res) {}, lintOptions);
   }
 
   function receiveMessage(event) {
     if (event.source !== sandboxWindow) {
-      window.console.log(['event.source', event.source]);
       return;
     }
     var data = event.data;
@@ -156,16 +162,104 @@ window.angular.element(document).ready(function () {
 
   // angular menu bootstrap
   function MenuCtrl($scope, $http, $cacheFactory) {
-    window.console.log('MenuCtrl');
     var $httpCache = $cacheFactory.get('$http');
     $scope.running = true;
     $scope.placeholder = 'Unsaved\u2026';
     $scope.toJson = angular.toJson;
     $scope.loading_sentinel = '';
     $scope.loaded_file = $scope.loading_sentinel;
-    $scope.groups = [
-      {name: 'My Code',
-       files: []}];
+    $scope.myCode = {name: 'My Code',
+                     files: []};
+    $scope.groups = [$scope.myCode];
+    $scope.currentDoc = null;
+    function newestFirst(a, b) {
+      return b.now - a.now;
+    }
+    CodeDB.getDocList().done(function docSuccess(docs) {
+      docs.sort(newestFirst);
+      $scope.$apply(function updateMenu(s) {
+        s.myCode.files = docs;
+      });
+    }).fail(genericFail);
+    function updateDoc($scope, doc) {
+      window.console.log(['updateDoc', doc]);
+      var oldDoc = $scope.currentDoc;
+      // update the name
+      if (oldDoc === null || oldDoc._id === doc._id) {
+        $scope.currentDoc = doc;
+      }
+      updateDocMenu($scope, doc);
+    }
+    function updateDocMenu($scope, doc) {
+      // update the menu, this has to happen in-place
+      var files = $scope.myCode.files;
+      var id = doc._id;
+      // remove any existing doc
+      for (var i = 0; i < files.length; i++) {
+        if (files[i]._id === id) {
+          files.splice(i, 1);
+          break;
+        }
+      }
+      // insert the new one and sort
+      files.push(doc);
+      files.sort(newestFirst);
+    }
+    function copyDoc() {
+      $scope.currentDoc = null;
+      $scope.filename = '';
+    }
+    $scope.copyDoc = copyDoc;
+    function focusName() {
+      angular.element('#main-menu input[name=filename]').focus();
+    }
+    $scope.focusName = focusName;
+    function trashDoc() {
+      var doc = $scope.currentDoc;
+      if (!doc && !doc._id) {
+        return;
+      }
+      CodeDB.remove(doc).done(function removeDocSuccess(response) {
+        $scope.$apply(function (s) {
+          var files = s.myCode.files;
+          for (var i = 0; i < files.length; i++) {
+            if (files[i]._id === doc._id) {
+              files.splice(i, 1);
+              break;
+            }
+          }
+        });
+        // this deletes it from the UI
+        copyDoc();
+      }).fail(genericFail);
+    }
+    $scope.trashDoc = trashDoc;
+    $scope.$watch('filename', function watchFilenameChange(name, oldName) {
+      // use angular.copy(doc) to prevent
+      // $$hashKey from being serialized
+      var doc = angular.copy($scope.currentDoc || {});
+      if (name === oldName || name === '' || doc.name === name) {
+        return;
+      }
+      window.console.log(['filenameChanged', name, oldName, doc]);
+      doc.name = name;
+      doc.now = Date.now();
+      doc = angular.copy(doc);
+      if (doc._id) {
+        CodeDB.updateDoc(doc).done(function updateDone(doc) {
+          $scope.$apply(function (s) {
+            updateDoc(s, doc);
+          });
+        }).fail(genericFail);
+      } else {
+        var codeAndHistory = getEditorState(editor);
+        CodeDB.createDoc(doc, getEditorState(editor)).done(function createDocDone(doc) {
+          $scope.$apply(function (s) {
+            updateDoc(s, doc);
+          });
+        }).fail(genericFail);
+      }
+    });
     $scope.loadFile = function loadFile() {
       if ($scope.loaded_file !== $scope.loading_sentinel) {
         var file = angular.fromJson($scope.loaded_file);
@@ -173,13 +267,23 @@ window.angular.element(document).ready(function () {
           // recipes
           $http({method: 'GET', url: file.url, cache: $httpCache}).
             success(function loadSuccess(data, status) {
-              loadDocument({code: data});
+              $scope.$apply(function (s) {
+                s.filename = '';
+              });
+              putEditorState(editor, {code: data});
             }).
             error(function loadError(data, status) {
               window.console.log(['load error :(', data, status]);
             });
         } else if (file._id) {
-          // TODO: pouchdb
+          CodeDB.getCode(file).then(function (codeAndHistory) {
+            $scope.$apply(function (s) {
+              s.filename = file.name;
+              s.currentDoc = file;
+              updateDocMenu(s, file);
+              putEditorState(editor, codeAndHistory);
+            });
+          }).fail(genericFail);
         }
         $scope.loaded_file = $scope.loading_sentinel;
       }
@@ -226,6 +330,9 @@ window.angular.element(document).ready(function () {
     callback: null
   };
 
+  $('#code-js').text(
+    ['// Type some code in below, or use the menu above to choose a recipe',
+     '\n\n\n\n\n\n\n\n'].join('\n'));
   editor = CodeMirror.fromTextArea(document.getElementById("code-js"), {
     lineNumbers: true,
     mode: "javascript",
@@ -239,6 +346,7 @@ window.angular.element(document).ready(function () {
     lineWrapping: true,
     lintWith: lintOptions
   });
+  editor.setCursor(1, 0);
   // refresh after font loads
   fontactive = function fontactive(fontName, fvd) {
     if (fontName === 'SourceCodeProRegular') {
@@ -249,10 +357,16 @@ window.angular.element(document).ready(function () {
   function finishedLoading() {
     $('#loading').addClass('hide');
     $('#container').addClass('show');
+    editor.refresh();
+    editor.focus();
   }
 
-  function loadDocument(val) {
-    editor.operation(function loadDocumentOp() {
+  function getEditorState(editor) {
+    return {code: editor.getValue(), history: editor.getHistory()};
+  }
+
+  function putEditorState(editor, val) {
+    editor.operation(function putEditorStateOp() {
       editor.setValue(val.code || '');
       editor.setHistory(val.history || {'done': [], 'undone': []});
     });

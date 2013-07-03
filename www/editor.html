@@ -22,6 +22,7 @@
     <script src="components/codemirror/addon/hint/javascript-hint.js"></script>
 
     <script src="components/codemirror/addon/edit/matchbrackets.js"></script>
+    <script src="js/persistence.js"></script>
     <script src="js/editor.js"></script>
 
     <style type="text/css">
@@ -33,7 +34,7 @@
       #main-menu { background-color: #eee; height: 2.5em; }
       #main-menu ul { font-family: "UbuntuRegular"; }
       #main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
-      #main-menu a.tool { padding: 5px 3px; color: #333333; }
+      #main-menu button.tool { padding: 8px 3px; color: #333333; border: none; background-color: transparent; }
       #main-menu .right-menu { 
       float: right;
       }
@@ -115,15 +116,15 @@
           </optgroup>
         </select>
         </li>
-        <li><a href="#" class="icon-copy icon-large tool" title="Make a copy of this code"></a></li>
-        <li><a href="#" class="icon-trash icon-large tool" title="Throw away this code"></a></li>
-        <li ng-class="{hide: running}"><a href="#" class="icon-play icon-large tool" title="Run this code"></a></li>
-        <li ng-class="{hide: !running}"><a href="#" class="icon-pause icon-large tool" title="Pause this code"></a></li>
+        <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName();"></button></li>
+        <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
+        <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code"></button></li>
+        <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code"></button></li>
       </ul>
       <ul class="right-menu">
-        <li><a href="#" class="icon-smile icon-large tool"></a></li>
-        <li><a href="#" class="icon-meh icon-large tool"></a></li>
-        <li><a href="#" class="icon-frown icon-large tool"></a></li>
+        <li><button class="icon-smile icon-large tool"></button></li>
+        <li><button class="icon-meh icon-large tool"></button></li>
+        <li><button class="icon-frown icon-large tool"></button></li>
       </ul>
     </div>
     <div id="container">
