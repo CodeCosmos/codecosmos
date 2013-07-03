@@ -112,7 +112,10 @@
         <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
           <option value="">Load&hellip;</option>
           <optgroup ng-repeat="group in groups" label="{{group.name}}">
-            <option ng-repeat="file in group.files" value="{{ toJson(file) }}">{{file.name}}</option>
+            <option
+              ng-repeat="file in group.files"
+              ng-disabled="isFileCurrent(file)"
+              value="{{ toJson(file) }}">{{file.name}}</option>
           </optgroup>
         </select>
         </li>

@@ -27,6 +27,7 @@ window.angular.element(document).ready(function () {
   'use strict';
   var BLOB_TYPE = 'text/plain;charset=utf-8';
   var BLOB_NAME = 'history-code-blob';
+  var EMPTY_HISTORY = {'done': [], 'undone': []};
   var Blob = window.Blob;
   var FileReader = window.FileReader;
   var WebFont = window.WebFont;
@@ -39,6 +40,7 @@ window.angular.element(document).ready(function () {
   var sandboxElem = document.getElementById('sandbox');
   var sandboxWindow = sandboxElem.contentWindow;
   var errorMarkers = [];
+  var lastGeneration = {code: '', history: EMPTY_HISTORY, generation: 0};
   // initialized later
   var lintOptions, editor;
 
@@ -173,6 +175,9 @@ window.angular.element(document).ready(function () {
                      files: []};
     $scope.groups = [$scope.myCode];
     $scope.currentDoc = null;
+    $scope.writeQueue = {
+    };
+    // Need some way to deal with writes that are going to conflight
     function scoped(fn) {
       return function scoped$wrapper() {
         var args = Array.prototype.slice.apply(arguments);
@@ -187,7 +192,7 @@ window.angular.element(document).ready(function () {
     function updateDoc(doc) {
       window.console.log(['updateDoc', doc]);
       var oldDoc = $scope.currentDoc;
-      // update the name
+      // update the doc to the latest state
       if (oldDoc === null || oldDoc._id === doc._id) {
         $scope.currentDoc = doc;
       }
@@ -212,17 +217,22 @@ window.angular.element(document).ready(function () {
       $scope.currentDoc = null;
       $scope.filename = '';
     }
+    function isFileCurrent(file) {
+      var doc = $scope.currentDoc;
+      return (doc && doc._id && doc._id === file._id);
+    }
+    $scope.isFileCurrent = isFileCurrent;
     $scope.copyDoc = copyDoc;
     function focusName() {
       angular.element('#main-menu input[name=filename]').focus();
     }
     $scope.focusName = focusName;
     function trashDoc() {
-      var doc = $scope.currentDoc;
-      if (!doc && !doc._id) {
+      var doc = angular.copy($scope.currentDoc || {});
+      if (!doc._id) {
         return;
       }
-      CodeDB.remove(doc).done(scoped(function removeDocSuccess(response) {
+      CodeDB.removeDoc(doc).done(scoped(function removeDocSuccess(response) {
         var files = $scope.myCode.files;
         for (var i = 0; i < files.length; i++) {
           if (files[i]._id === doc._id) {
@@ -235,6 +245,32 @@ window.angular.element(document).ready(function () {
       })).fail(genericFail);
     }
     $scope.trashDoc = trashDoc;
+    $scope.updates = [];
+    $scope.updateInProgress = null;
+    function queueDocUpdate(id, props) {
+      $scope.updates.push({id: id, props: props});
+      pollUpdateQueue();
+    }
+    function pollUpdateQueue() {
+      if ($scope.updateInProgress !== null || $scope.updates.length === 0) {
+        return;
+      }
+      var doc = $scope.updates.reduce(function reduceDoc(doc, update) {
+        if (update.id === doc._id) {
+          return $.extend(doc, update.props);
+        } else {
+          return doc;
+        }
+      }, angular.copy($scope.currentDoc));
+      $scope.updates = [];
+      $scope.updateInProgress = CodeDB.updateDoc(doc)
+        .done(scoped(updateDoc))
+        .fail(genericFail)
+        .always(scoped(function nextUpdate() {
+          $scope.updateInProgress = null;
+          pollUpdateQueue();
+        }));
+    }
     $scope.$watch('filename', function watchFilenameChange(name, oldName) {
       // use angular.copy(doc) to prevent
       // $$hashKey from being serialized
@@ -243,13 +279,11 @@ window.angular.element(document).ready(function () {
         return;
       }
       window.console.log(['filenameChanged', name, oldName, doc]);
-      doc.name = name;
-      doc.now = Date.now();
       if (doc._id) {
-        CodeDB.updateDoc(doc)
-          .done(scoped(updateDoc))
-          .fail(genericFail);
+        queueDocUpdate(doc._id, {name: name, now: Date.now()});
       } else {
+        doc.name = name;
+        doc.now = Date.now();
         CodeDB.createDoc(doc, getEditorState(editor))
           .done(scoped(updateDoc))
           .fail(genericFail);
@@ -262,17 +296,19 @@ window.angular.element(document).ready(function () {
           // recipes
           $http({method: 'GET', url: file.url, cache: $httpCache}).
             success(function loadSuccess(data, status) {
-              $scope.filename = '';
+              // side-effect of creating a new unsaved doc
+              copyDoc();
               putEditorState(editor, {code: data});
             }).
             error(function loadError(data, status) {
               window.console.log(['load error :(', data, status]);
             });
         } else if (file._id) {
-          CodeDB.getCode(file).then(scoped(function (codeAndHistory) {
-            $scope.filename = file.name;
-            $scope.currentDoc = file;
-            updateDocMenu(file);
+          var doc = angular.copy(file);
+          CodeDB.getCode(doc).then(scoped(function (codeAndHistory) {
+            $scope.filename = doc.name;
+            $scope.currentDoc = doc;
+            updateDocMenu(doc);
             putEditorState(editor, codeAndHistory);
           })).fail(genericFail);
         }
@@ -356,14 +392,29 @@ window.angular.element(document).ready(function () {
     editor.focus();
   }
 
+  function editorStateEq(a, b) {
+    // TODO: use this
+    var a_history = a.history;
+    var b_history = b.history;
+    return (a.code === b.code &&
+            Array.isArray(a_history) &&
+            Array.isArray(b_history) &&
+            a_history.length === b_history.length &&
+            a_history.every(function (x, i) { return x === b_history[i]; }));
+  }
+
   function getEditorState(editor) {
     return {code: editor.getValue(), history: editor.getHistory()};
   }
 
   function putEditorState(editor, val) {
+    sandboxWindow.postMessage({msg: 'exec', val: '', id: 'putEditorState'}, '*');
     editor.operation(function putEditorStateOp() {
+      var code = val.code || '';
+      var history = val.history || '';
       editor.setValue(val.code || '');
-      editor.setHistory(val.history || {'done': [], 'undone': []});
+      editor.setHistory(val.history || EMPTY_HISTORY);
+      lastGeneration = {code: code, history: history, generation: editor.changeGeneration()};
     });
   }
 

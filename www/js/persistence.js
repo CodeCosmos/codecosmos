@@ -47,46 +47,46 @@
     fn.apply(ctx, args);
     return d;
   }
+
   var CodeDB = {
-    getDocList: function getDocList() {
-      return dm(db, 'allDocs', {include_docs: true}).
-        then(function dbAllDocs(res) {
-          return res.rows.map(function extractDoc(row) {
-            return row.doc;
-          });
-        });
-    },
     getDoc: function getDoc(doc) {
       return dm(db, 'get', doc._id, {});
     },
-    createDoc: function createDoc(doc, codeAndHistory) {
-      return dm(db, 'post', doc, {}).
-        then(function dbPost(response) {
-          doc._id = response.id;
-          doc._rev = response.rev;
-          return CodeDB.updateCode(doc, codeAndHistory);
-        });
-    },
     updateDoc: function updateDoc(doc) {
-      return dm(db, 'put', doc, {}).
-        then(function dbPut(response) {
-          return CodeDB.getDoc(doc);
-        });
+      return dm(db, 'put', doc, {}).then(
+        this.getDoc.bind(this, doc));
     },
     removeDoc: function removeDoc(doc) {
-      return dm(db, 'remove', doc._id, {});
+      return dm(db, 'remove', doc, {});
     },
     getCode: function getCode(doc) {
-      return dm(db, 'getAttachment', doc._id, BLOB_NAME, {}).then(deserializeBlob);
+      return dm(db, 'getAttachment', doc._id, BLOB_NAME, {}).then(
+        deserializeBlob);
     },
     updateCode: function updateCode(doc, codeAndHistory) {
       var blob = serializeBlob(codeAndHistory);
       if (!doc._attachments) {
         doc._attachments = {};
       }
-      return dm(db, 'putAttachment', doc._id, BLOB_NAME, doc._rev, blob, BLOB_TYPE).
-        then(function updateCodeResponse(res) {
-          return CodeDB.getDoc(doc);
+      return dm(db, 'putAttachment', doc._id, BLOB_NAME, doc._rev, blob, BLOB_TYPE).then(
+        this.getDoc.bind(this, doc));
+    },
+    // Unwrapped API methods
+    getDocList: function getDocList() {
+      return dm(db, 'allDocs', {include_docs: true}).then(
+        function dbAllDocs(res) {
+          return res.rows.map(function extractDoc(row) {
+            return row.doc;
+          });
+        });
+    },
+    createDoc: function createDoc(doc, codeAndHistory) {
+      var self = this;
+      return dm(db, 'post', doc, {}).
+        then(function dbPost(response) {
+          doc._id = response.id;
+          doc._rev = response.rev;
+          return self.updateCode(doc, codeAndHistory);
         });
     }
   };
