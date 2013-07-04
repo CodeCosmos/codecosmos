@@ -28,6 +28,8 @@ window.angular.element(document).ready(function () {
   var BLOB_TYPE = 'text/plain;charset=utf-8';
   var BLOB_NAME = 'history-code-blob';
   var EMPTY_HISTORY = {'done': [], 'undone': []};
+  var Uint8Array = window.Uint8Array;
+  var URL = window.URL || window.webkitURL;
   var Blob = window.Blob;
   var FileReader = window.FileReader;
   var WebFont = window.WebFont;
@@ -35,31 +37,35 @@ window.angular.element(document).ready(function () {
   var Pouch = window.Pouch;
   var angular = window.angular;
   var $ = window.jQuery;
-  var lintTime = 500;
+  var jz = window.jz;
   var CodeDB = window.CodeDB;
+  var lintTime = 500;
   var sandboxElem = document.getElementById('sandbox');
   var sandboxWindow = sandboxElem.contentWindow;
   var errorMarkers = [];
   var lastGeneration = {code: '', history: EMPTY_HISTORY, generation: 0};
-  var EXPORT_TEMPLATE = {
-    description: '',
-    files: {
-      'code.js': {content: ''},
-      'index.html': {
-        content: [
-          '<!doctype html><html><head>',
-          '<style type="text/css">',
-          'html { overflow: hidden; }',
-          'body { margin: 0; padding: 0; height: 100%; }',
-          '</style>',
-          '<script src="//cdnjs.cloudflare.com/ajax/libs/processing.js/1.4.1/processing-api.min.js"></script>',
-          '<script src="http://mohayonao.github.io/timbre.js/timbre.js"></script>',
-          '</head>',
-          '<body>',
-          '<canvas id="pjs"></canvas>',
-          '<script src="code.js"></script>',
-          '</body>',
-          '</html>'].join('\n')}}};
+  var GITHUB_SCRIPT_URLS = [
+    '//cdnjs.cloudflare.com/ajax/libs/processing.js/1.4.1/processing-api.min.js',
+    'http://mohayonao.github.io/timbre.js/timbre.js'];
+  var BACKUP_SCRIPT_URLS = [
+    '../processing-api.min.js',
+    '../timbre.js'];
+  function exportIndexHtml(title, scriptURLs, mainScript) {
+    return [
+      '<!doctype html><html><head>',
+      '<title>' + $('<div/>').text(title).html() + '</title>',
+      '<style type="text/css">',
+      'html { overflow: hidden; }',
+      'body { margin: 0; padding: 0; height: 100%; }',
+      '</style>',
+      scriptURLs.map(function (url) { return '<script src="' + url + '"></script>'; }).join('\n'),
+      '</head>',
+      '<body>',
+      '<canvas id="pjs"></canvas>',
+      '<script src="' + mainScript + '"></script>',
+      '</body>',
+      '</html>'].join('\n');
+  }
 
   // initialized later
   var lintOptions, editor;
@@ -189,7 +195,7 @@ window.angular.element(document).ready(function () {
   }
 
   // angular menu bootstrap
-  function MenuCtrl($scope, $http, $cacheFactory) {
+  function MenuCtrl($scope, $q, $http, $cacheFactory) {
     var $httpCache = $cacheFactory.get('$http');
     $scope.running = true;
     $scope.placeholder = 'Unsaved\u2026';
@@ -203,6 +209,10 @@ window.angular.element(document).ready(function () {
     $scope.currentDoc = null;
     $scope.shareUrl = '';
     $scope.displaySharePanel = false;
+    $scope.displayBackupPanel = false;
+    $scope.backupUrl = '';
+    $scope.backupPercent = 0;
+
     // Need some way to deal with writes that are going to conflight
     function scoped(fn) {
       return function scoped$wrapper() {
@@ -273,22 +283,117 @@ window.angular.element(document).ready(function () {
     }
     $scope.trashDoc = trashDoc;
     function publishDoc() {
-      var data = angular.copy(EXPORT_TEMPLATE);
-      data.description = $scope.filename;
-      data.files['code.js'].content = sandboxWindow.wrapForExport(lastGeneration.code);
-      $.post('https://api.github.com/gists', JSON.stringify(data)).
-        then(scoped(function (res) {
-          $scope.shareUrl = 'http://bl.ocks.org/' + res.id;
+      var data = {
+        description: $scope.filename,
+        files: {
+          'code.js': {content: sandboxWindow.wrapForExport(lastGeneration.code)},
+          'index.html': {content: exportIndexHtml($scope.filename, GITHUB_SCRIPT_URLS, 'code.js')}
+        }
+      };
+      // This makes it take a while, so let's not do that for now.
+      /*
+      var sandboxScripts = $(sandboxWindow.document).find('script[data-export]');
+      window.console.log(sandboxScripts);
+      var d = $q.all(sandboxScripts.map(function (i, s) {
+        var url = s.src;
+        var fn = url.replace(/.*\//, '');
+        window.console.log([url, fn]);
+        return $http({method: 'GET', url: url, cache: true}).then(function (res) {
+          data.files[fn] = {content: res.data};
+        });
+      })).then(function gotScripts() {
+        window.console.log(['gotScripts', data]);
+       */
+      $http({method: 'POST', url: 'https://api.github.com/gists', data: data}).
+        success(function loadSuccess(data, status, headers, config) {
+          $scope.shareUrl = 'http://bl.ocks.org/' + data.id;
           $scope.displaySharePanel = true;
-        })).fail(genericFail);
+        }).
+        error(function loadError(data, status, headers, config) {
+          window.console.log(['POST error :(', data, status, headers, config]);
+        });
     }
     $scope.publishDoc = publishDoc;
 
-    function codeUpdateSuccess(id) {
-      var doc = angular.copy($scope.currentDoc || {});
-      if (doc._id === id) {
-      }
+    function getSandboxScripts() {
+      var sandboxScripts = $(sandboxWindow.document).find('script[data-export]');
+      return $q.all(sandboxScripts.map(function (i, s) {
+        var url = s.src;
+        var fn = url.replace(/.*\//, '');
+        window.console.log([url, fn]);
+        return $http({method: 'GET', url: url, cache: true}).then(function (res) {
+          return {name: fn, buffer: res.data};
+        });
+      }));
     }
+
+    function wrapDeferred(other) {
+      var d = new $.Deferred();
+      other.then(function resolve() { d.resolve.apply(d, arguments); },
+                 function reject() { d.reject.apply(d, arguments); });
+      return d;
+    }
+
+    function backupIndex(docs) {
+      return ['<!doctype html>',
+              '<html><head><title>CodeCosmos Backup</title></head>',
+              '<body>',
+              '<h1>Your CodeCosmos:</h1>',
+              '<ul>',
+              docs.map(function (doc) {
+                return ['<li><a href="docs/', doc._id, '.html">',
+                        $('<div/>').text(doc.name).html(),
+                        '</a></li>'].join('');
+              }).join('\n'),
+              '</ul>',
+              '</body>',
+              '</html>'].join('\n');
+    }
+
+    function downloadBackup() {
+      $scope.displayBackupPanel = true;
+      var files = $scope.myCode.files;
+      var outdocs = [];
+      var jsfiles = [];
+      var outfiles = [{name: 'codecosmos-backup', dir: [
+        {name: 'manifest.json', buffer: angular.toJson(files)},
+        {name: 'index.html', buffer: backupIndex(files)},
+        {name: 'js', dir: jsfiles},
+        {name: 'docs', dir: outdocs}]}];
+      var total = 1 + files.length;
+      var current = 0;
+      $scope.backupPercent = current / total;
+      var startD = wrapDeferred(getSandboxScripts()).then(function gotJS(scripts) {
+        jsfiles.push.apply(jsfiles, scripts);
+      });
+      var d = files.reduce(function (d, doc) {
+        return d.then(function getCodeForExport() {
+          return CodeDB.getCode(doc).then(function (codeAndHistory) {
+            var scriptUrls = jsfiles.map(function (f) { return '../js/' + f.name; });
+            outdocs.push(
+              {name: doc._id + '.json', buffer: angular.toJson(codeAndHistory)},
+              {name: doc._id + '.js', buffer: sandboxWindow.wrapForExport(codeAndHistory.code)},
+              {name: doc._id + '.html', buffer: exportIndexHtml(doc.name, scriptUrls, doc._id + '.js')});
+            $scope.$apply(function updatePercent() {
+              current++;
+              $scope.backupPercent = current / total;
+            });
+          });
+        });
+      }, startD);
+      window.setTimeout(startD.resolve, 0);
+      d.then(function packExportZip() {
+        // can't just return this because it's not a jQuery deferred!
+        return wrapDeferred(jz.zip.pack({files: outfiles, level: 9}));
+      }).then(scoped(function (buffer) {
+        var blob = new Blob([new Uint8Array(buffer)], {type: 'application/zip'});
+        current = total;
+        $scope.backupPercent = 1;
+        $scope.backupUrl = URL.createObjectURL(blob);
+      })).fail(genericFail);
+      
+    }
+    $scope.downloadBackup = downloadBackup;
 
     $scope.potentialCodeUpdates = {};
     function savePotentialUpdate(ctx) {
@@ -436,7 +541,18 @@ window.angular.element(document).ready(function () {
         $('#loading h1').text("Connectivity problem, please try reloading :(");
       });
   }
+
+  function downloadUrlFactory() {
+    return {
+      link: function downloadUrlLink($scope, $element, $attrs) {
+        $scope.$watch($attrs.downloadUrl, function (value) {
+          $element.attr('href', value);
+        });
+      }
+    };
+  }
   angular.module('menuModule', [])
+    .directive('downloadUrl', downloadUrlFactory)
     .controller('MenuCtrl', MenuCtrl);
 
   // angular errors bootstrap
