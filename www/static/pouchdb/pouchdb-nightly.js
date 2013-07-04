@@ -1,4 +1,4 @@
-// PouchDB.nightly - 2013-06-24T05:00:45
+// PouchDB.nightly - 2013-07-03T22:00:42
 
 (function() {
  // BEGIN Math.uuid.js
@@ -1427,7 +1427,7 @@ Pouch.merge.collectLeaves = function(revs) {
   return leaves;
 };
 
-// returns all conflicts that is leaves such that
+// returns revs of all conflicts that is leaves such that
 // 1. are not deleted and
 // 2. are different than winning revision
 Pouch.merge.collectConflicts = function(metadata) {
@@ -1925,6 +1925,10 @@ var filterChange = function(opts) {
     }
     if (!opts.include_docs) {
       delete change.doc;
+    } else {
+      for (var att in change.doc._attachments) {
+        change.doc._attachments[att].stub = true;
+      }
     }
     return true;
   };
@@ -4177,8 +4181,10 @@ var IdbPouch = function(opts, callback) {
               delete(doc.doc._doc_id_rev);
           }
           if (opts.conflicts) {
-            doc.doc._conflicts = Pouch.merge.collectConflicts(metadata)
-              .map(function(x) { return x; });
+            doc.doc._conflicts = Pouch.merge.collectConflicts(metadata);
+          }
+          for (var att in doc.doc._attachments) {
+            doc.doc._attachments[att].stub = true;
           }
         }
         if ('keys' in opts) {
@@ -4358,8 +4364,7 @@ var IdbPouch = function(opts, callback) {
             change.deleted = true;
           }
           if (opts.conflicts) {
-            change.doc._conflicts = Pouch.merge.collectConflicts(metadata)
-              .map(function(x) { return x; });
+            change.doc._conflicts = Pouch.merge.collectConflicts(metadata);
           }
 
           // Dedupe the changes feed
@@ -4920,9 +4925,6 @@ var webSqlPouch = function(opts, callback) {
   function makeRevs(arr) {
     return arr.map(function(x) { return {rev: x.rev}; });
   }
-  function makeIds(arr) {
-    return arr.map(function(x) { return x.id; });
-  }
 
   api._allDocs = function(opts, callback) {
     var results = [];
@@ -4965,7 +4967,10 @@ var webSqlPouch = function(opts, callback) {
               doc.doc = data;
               doc.doc._rev = Pouch.merge.winningRev(metadata);
               if (opts.conflicts) {
-                doc.doc._conflicts = makeIds(Pouch.merge.collectConflicts(metadata));
+                doc.doc._conflicts = Pouch.merge.collectConflicts(metadata);
+              }
+              for (var att in doc.doc._attachments) {
+                doc.doc._attachments[att].stub = true;
               }
             }
             if ('keys' in opts) {
