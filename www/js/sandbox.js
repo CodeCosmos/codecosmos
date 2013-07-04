@@ -113,6 +113,58 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     return this.toStringWithSourceMap().code;
   };
 
+  function processingExportWrapper($userCode, processing) {
+    var __f = $userCode;
+    // Ignore everything below here! :)
+    var p = processing;
+    function __setup() {
+      processing.size(window.innerWidth, window.innerHeight);
+    }
+    function __once() {
+      processing.noLoop();
+      processing.frameRate(20);
+      __clear();
+      timbre.reset();
+      timbre.pause();
+    }
+    function __wrap(a, b) {
+      if (b && a !== b) {
+        return function __wrap_two() {
+          a.apply(this, arguments);
+          return b.apply(this, arguments);
+        };
+      } else {
+        return a;
+      }
+    }
+    function __skipFirst(f) {
+      var first = true;
+      return function () {
+        if (first) {
+          first = false;
+        } else {
+          f();
+        }
+      };
+    }
+    function __clear() {
+      processing.background(255);
+    }
+    window.onresize = function onresize() {
+      if (processing && processing.setup) {
+        processing.setup(); processing.redraw();
+      }
+    };
+    __setup();
+    __once();
+    __f();
+    processing.setup = __wrap(__setup, processing.setup);
+    if (processing.draw === undefined) {
+      // hook redraw for resize events
+      processing.draw = __skipFirst(__f);
+    }
+  }
+
   function processingWrapper($userCode, __postFail, processing) {
     if (!processing) {
       return;
@@ -231,15 +283,22 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   }
 
   var processingTemplate = makeOneLine(extractCode(processingWrapper));
+  var processingExportTemplate = extractCode(processingExportWrapper);
 
-  function wrapCode(code) {
+  function wrapCode(code, template, functionName) {
     // avoid interpretation of the replacement string by using a fun.
     // otherwise mo' $ mo problems.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#Specifying_a_string_as_a_parameter
-    return ("'use strict';" + processingTemplate.replace(/\$userCode/, function () {
-      return 'function __userCode$1() {\n' + code + '\n}';
+    return ("'use strict';" + template.replace(/\$userCode/, function () {
+      return 'function ' + functionName + '() {\n' + code + '\n}';
     }));
   }
+
+  window.wrapForExport = function wrapForExport(code) {
+    return ["var pi = new Processing('pjs', function (processing) { ",
+            wrapCode(code, processingExportTemplate, 'myCodeCosmos'),
+            "});"].join('');
+  };
 
   var injectStatement = esprima.parse(extractCode(function (__ctr, __maxctr, __cont) {
     if (++__ctr >= __maxctr) {
@@ -391,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     var ast = instrumentAST(esprima.parse(code, {range: true, loc: true}));
     var genMap = escodegen.generate(ast, {sourceMap: true,
                                           sourceMapWithCode: true});
-    var genCode = wrapCode(genMap.code);
+    var genCode = wrapCode(genMap.code, processingTemplate, '__userCode$1');
     var onFail = postFail.bind(null, id, ast, genMap.map, genCode);
     /* jshint evil:true */
     sketchProc = new Function(

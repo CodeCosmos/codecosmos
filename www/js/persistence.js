@@ -33,9 +33,6 @@
   // Deferred from node.js style callback to a jQuery Deferred
   function dm(ctx, fn/*, ...args*/) {
     var d = new Deferred();
-    if (typeof fn === 'string') {
-      fn = ctx[fn];
-    }
     var args = Array.prototype.slice.call(arguments, 2);
     args.push(function cbToDeferred(err, res) {
       if (err) {
@@ -44,35 +41,41 @@
         d.resolve(res);
       }
     });
-    fn.apply(ctx, args);
+    var f = (typeof fn === 'string') ? ctx[fn] : fn;
+    f.apply(ctx, args);
     return d;
   }
 
   var CodeDB = {
-    getDoc: function getDoc(doc) {
+    getDoc: function CodeDB_getDoc(doc) {
       return dm(db, 'get', doc._id, {});
     },
-    updateDoc: function updateDoc(doc) {
-      return dm(db, 'put', doc, {}).then(
-        this.getDoc.bind(this, doc));
+    updateDoc: function CodeDB_updateDoc(doc) {
+      var self = this;
+      return dm(db, 'put', doc, {}).then(function didPut() {
+        return self.getDoc(doc);
+      });
     },
-    removeDoc: function removeDoc(doc) {
+    removeDoc: function CodeDB_removeDoc(doc) {
       return dm(db, 'remove', doc, {});
     },
-    getCode: function getCode(doc) {
+    getCode: function CodeDB_getCode(doc) {
       return dm(db, 'getAttachment', doc._id, BLOB_NAME, {}).then(
         deserializeBlob);
     },
-    updateCode: function updateCode(doc, codeAndHistory) {
+    updateCode: function CodeDB_updateCode(doc, codeAndHistory) {
       var blob = serializeBlob(codeAndHistory);
+      var self = this;
       if (!doc._attachments) {
         doc._attachments = {};
       }
       return dm(db, 'putAttachment', doc._id, BLOB_NAME, doc._rev, blob, BLOB_TYPE).then(
-        this.getDoc.bind(this, doc));
+        function getUpdatedDoc() {
+          return self.getDoc(doc);
+        });
     },
     // Unwrapped API methods
-    getDocList: function getDocList() {
+    getDocList: function CodeDB_getDocList() {
       return dm(db, 'allDocs', {include_docs: true}).then(
         function dbAllDocs(res) {
           return res.rows.map(function extractDoc(row) {
@@ -80,7 +83,7 @@
           });
         });
     },
-    createDoc: function createDoc(doc, codeAndHistory) {
+    createDoc: function CodeDB_createDoc(doc, codeAndHistory) {
       var self = this;
       return dm(db, 'post', doc, {}).
         then(function dbPost(response) {

@@ -44,6 +44,21 @@
       line-height: 1.5em;
       font-size: 100%;
       }
+      #share-panel {
+      z-index: 10000;
+      background-color: #eee;
+      border: 1px solid black;
+      box-sizing: border-box;
+      position: absolute;
+      top: 2.5em;
+      height: 2em;
+      width: 50%;
+      display: table;
+      }
+      #share-panel .content { display: table-cell; vertical-align:
+      middle; height: 100%; width: 100%; line-height: 1.5em;
+      padding-left: 8px; }
+      #share-panel .close-button { float: right; }
 
       @-webkit-keyframes loading-pulse {
         from { opacity: 0.25; }
@@ -85,7 +100,7 @@
       #code { position:absolute; width: 50%; height: 100%; }
       #display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
       .hide { display: none; }
-      #main-menu .hide { display: none; }
+      #main-container .hide { display: none; }
       #errors { position: absolute; left: 0; right: 0;
       background-color: #ffffff; border: 1px solid black; display:
       none; padding-left: 1em; }
@@ -102,33 +117,42 @@
     </style>
   </head>
   <body>
-    <div id="main-menu" ng-controller="MenuCtrl" class="pure-menu pure-menu-open pure-menu-horizontal">
-      <a href="#" class="pure-menu-heading">CodeCosmos</a>
-      <ul>
-        <li class="pure-menu">
-          <input type="text" name="filename" placeholder="{{ placeholder }}" ng-model="filename" />
-        </li>
-        <li class="pure-menu">
-        <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
-          <option value="">Load&hellip;</option>
-          <optgroup ng-repeat="group in groups" label="{{group.name}}">
-            <option
-              ng-repeat="file in group.files"
-              ng-disabled="isFileCurrent(file)"
-              value="{{ toJson(file) }}">{{file.name}}</option>
-          </optgroup>
-        </select>
-        </li>
-        <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName();"></button></li>
-        <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
-        <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code"></button></li>
-        <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code"></button></li>
-      </ul>
-      <ul class="right-menu">
-        <li><button class="icon-smile icon-large tool"></button></li>
-        <li><button class="icon-meh icon-large tool"></button></li>
-        <li><button class="icon-frown icon-large tool"></button></li>
-      </ul>
+    <div id="main-container" ng-controller="MenuCtrl">
+      <div id="main-menu" class="pure-menu pure-menu-open pure-menu-horizontal">
+        <a href="#" class="pure-menu-heading">CodeCosmos</a>
+        <ul>
+          <li class="pure-menu">
+            <input type="text" name="filename" placeholder="{{ placeholder }}" ng-model="filename" />
+          </li>
+          <li class="pure-menu">
+            <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
+              <option value="">Load&hellip;</option>
+              <optgroup ng-repeat="group in groups" label="{{group.name}}">
+                <option
+                   ng-repeat="file in group.files"
+                   ng-disabled="isFileCurrent(file)"
+                   value="{{ toJson(file) }}">{{file.name}}</option>
+              </optgroup>
+            </select>
+          </li>
+          <li><button class="icon-share icon-large tool" title="Publish this code" ng-click="publishDoc()"></button></li>
+          <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName();"></button></li>
+          <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code"></button></li>
+          <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code"></button></li>
+        </ul>
+        <ul class="right-menu">
+          <li><button class="icon-smile icon-large tool"></button></li>
+          <li><button class="icon-meh icon-large tool"></button></li>
+          <li><button class="icon-frown icon-large tool"></button></li>
+          <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
+        </ul>
+      </div>
+      <div id="share-panel" ng-class="{hide: !displaySharePanel}" class="hide">
+        <div class="content">
+          Published to: <a href="{{ shareUrl }}" title="Right-click and Copy Link Address" target="_blank">{{ shareUrl }}</a>
+          <button class="close-button" ng-click="displaySharePanel = false">X</button>
+        </div>
+      </div>
     </div>
     <div id="container">
       <section id="code"><textarea id="code-js"></textarea></section>

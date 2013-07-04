@@ -44,11 +44,12 @@
   }
 
   function ccAsyncJavascriptValidator(cm, updateLinting, opts) {
-    var code = cm.getValue();
+    var ctx = opts.getState(cm);
+    var code = ctx.code;
     var errors = validator(code, options, globals);
     updateLinting(cm, errors);
     if (opts.callback) {
-      opts.callback(cm, code, errors);
+      opts.callback(cm, ctx, errors);
     }
   }
   ccAsyncJavascriptValidator.updateGlobals = function updateGlobals(f) {

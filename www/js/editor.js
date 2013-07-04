@@ -41,6 +41,26 @@ window.angular.element(document).ready(function () {
   var sandboxWindow = sandboxElem.contentWindow;
   var errorMarkers = [];
   var lastGeneration = {code: '', history: EMPTY_HISTORY, generation: 0};
+  var EXPORT_TEMPLATE = {
+    description: '',
+    files: {
+      'code.js': {content: ''},
+      'index.html': {
+        content: [
+          '<!doctype html><html><head>',
+          '<style type="text/css">',
+          'html { overflow: hidden; }',
+          'body { margin: 0; padding: 0; height: 100%; }',
+          '</style>',
+          '<script src="//cdnjs.cloudflare.com/ajax/libs/processing.js/1.4.1/processing-api.min.js"></script>',
+          '<script src="http://mohayonao.github.io/timbre.js/timbre.js"></script>',
+          '</head>',
+          '<body>',
+          '<canvas id="pjs"></canvas>',
+          '<script src="code.js"></script>',
+          '</body>',
+          '</html>'].join('\n')}}};
+
   // initialized later
   var lintOptions, editor;
 
@@ -56,8 +76,7 @@ window.angular.element(document).ready(function () {
       {completeSingle: false});
   };
 
-  function maybeUpdateSandbox(cm, code, errors) {
-    var id = cm.changeGeneration();
+  function maybeUpdateSandbox(cm, ctx, errors) {
     cm.operation(function () {
       while (errorMarkers.length) {
         errorMarkers.pop().clear();
@@ -67,7 +86,9 @@ window.angular.element(document).ready(function () {
       var s = angular.element('#errors').scope().$apply(function (s) {
         s.errors = [];
       });
-      sandboxWindow.postMessage({msg: 'exec', val: code, id: id}, '*');
+      angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.postSandboxUpdate(ctx);
+      });
     }
   }
 
@@ -122,14 +143,19 @@ window.angular.element(document).ready(function () {
                             {className: className}));
         });
       });
-      angular.element('#errors').scope().$apply(function (s) {
-        s.errors = (err.stackHints || []);
-        s.name = err.name;
-        s.message = err.message;
-        s.explanation = explainError(err);
+      angular.element('#errors').scope().$apply(function ($scope) {
+        $scope.errors = (err.stackHints || []);
+        $scope.name = err.name;
+        $scope.message = err.message;
+        $scope.explanation = explainError(err);
+      });
+      angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.sandboxUpdateFail(id);
       });
     } else if (msg === 'success') {
-      window.console.log([msg, id]);
+      angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.sandboxUpdateSuccess(id);
+      });
     }
   }
 
@@ -175,8 +201,8 @@ window.angular.element(document).ready(function () {
                      files: []};
     $scope.groups = [$scope.myCode];
     $scope.currentDoc = null;
-    $scope.writeQueue = {
-    };
+    $scope.shareUrl = '';
+    $scope.displaySharePanel = false;
     // Need some way to deal with writes that are going to conflight
     function scoped(fn) {
       return function scoped$wrapper() {
@@ -221,6 +247,7 @@ window.angular.element(document).ready(function () {
       var doc = $scope.currentDoc;
       return (doc && doc._id && doc._id === file._id);
     }
+    $scope.lastState = null;
     $scope.isFileCurrent = isFileCurrent;
     $scope.copyDoc = copyDoc;
     function focusName() {
@@ -245,31 +272,111 @@ window.angular.element(document).ready(function () {
       })).fail(genericFail);
     }
     $scope.trashDoc = trashDoc;
+    function publishDoc() {
+      var data = angular.copy(EXPORT_TEMPLATE);
+      data.description = $scope.filename;
+      data.files['code.js'].content = sandboxWindow.wrapForExport(lastGeneration.code);
+      $.post('https://api.github.com/gists', JSON.stringify(data)).
+        then(scoped(function (res) {
+          $scope.shareUrl = 'http://bl.ocks.org/' + res.id;
+          $scope.displaySharePanel = true;
+        })).fail(genericFail);
+    }
+    $scope.publishDoc = publishDoc;
+
+    function codeUpdateSuccess(id) {
+      var doc = angular.copy($scope.currentDoc || {});
+      if (doc._id === id) {
+      }
+    }
+
+    $scope.potentialCodeUpdates = {};
+    function savePotentialUpdate(ctx) {
+      $scope.potentialCodeUpdates[ctx.generation] = ctx;
+    }
+    function popPotentialUpdate(id) {
+      var ctx = null;
+      if (id !== null) {
+        ctx = $scope.potentialCodeUpdates[id.generation] || null;
+        if (ctx !== null) {
+          delete $scope.potentialCodeUpdates[id.generation];
+        }
+      }
+      return ctx;
+    }
+
+    function postSandboxUpdate(ctx) {
+      // need a good way to track history here :(
+      var doc = $scope.currentDoc;
+      var id = doc ? doc._id : null;
+      if (id) {
+        savePotentialUpdate(ctx);
+      }
+      sandboxWindow.postMessage(
+        {msg: 'exec',
+         val: ctx.code,
+         id: {generation: ctx.generation, id: id}},
+        '*');
+    }
+    $scope.postSandboxUpdate = postSandboxUpdate;
+    function sandboxUpdateSuccess(id) {
+      // TODO: it's entirely possible that a fail could still
+      // happen after frame 1, but let's not worry about that now.
+      var ctx = popPotentialUpdate(id);
+      if (ctx !== null && id.id !== null) {
+        queueDocUpdate(id.id, {now: Date.now()}, ctx);
+      }
+    }
+    $scope.sandboxUpdateSuccess = sandboxUpdateSuccess;
+    function sandboxUpdateFail(id) {
+      window.console.log(['sandboxUpdateFail', id]);
+      popPotentialUpdate(id);
+    }
+    $scope.sandboxUpdateFail = sandboxUpdateFail;
+
     $scope.updates = [];
     $scope.updateInProgress = null;
-    function queueDocUpdate(id, props) {
-      $scope.updates.push({id: id, props: props});
-      pollUpdateQueue();
+    function queueDocUpdate(id, props, codeAndHistory) {
+      $scope.updates.push({id: id, props: props, code: codeAndHistory});
+      window.setTimeout(pollUpdateQueue, 0);
     }
     function pollUpdateQueue() {
       if ($scope.updateInProgress !== null || $scope.updates.length === 0) {
         return;
       }
-      var doc = $scope.updates.reduce(function reduceDoc(doc, update) {
+      var acc = $scope.updates.reduce(function reduceDoc(acc, update) {
+        var doc = acc.doc;
         if (update.id === doc._id) {
-          return $.extend(doc, update.props);
-        } else {
-          return doc;
+          if (update.code !== null && update.code !== undefined) {
+            acc.code = update.code;
+          }
+          acc.doc = $.extend(doc, update.props);
         }
-      }, angular.copy($scope.currentDoc));
+        return acc;
+      }, {code: null, doc: angular.copy($scope.currentDoc)});
       $scope.updates = [];
-      $scope.updateInProgress = CodeDB.updateDoc(doc)
+      var ls = $scope.lastState || {doc: {}, code: {}};
+      if (ls.doc && ls.doc.name === acc.doc.name && ls.doc._id === acc.doc._id) {
+        if (acc.code === null || ls.code.code === acc.code.code) {
+          return;
+        }
+      }
+      var d = CodeDB.updateDoc(acc.doc);
+      if (acc.code !== null) {
+        d = d.then(function doCodeUpdate(doc) {
+          return CodeDB.updateCode(doc, acc.code).done(function () {
+            $scope.lastState = {doc: doc, code: acc.code};
+          });
+        });
+      }
+      var nextUpdate = scoped(function nextUpdate() {
+        $scope.updateInProgress = null;
+        window.setTimeout(pollUpdateQueue, 0);
+      });
+      $scope.updateInProgress = d
         .done(scoped(updateDoc))
         .fail(genericFail)
-        .always(scoped(function nextUpdate() {
-          $scope.updateInProgress = null;
-          pollUpdateQueue();
-        }));
+        .then(nextUpdate, nextUpdate);
     }
     $scope.$watch('filename', function watchFilenameChange(name, oldName) {
       // use angular.copy(doc) to prevent
@@ -278,9 +385,8 @@ window.angular.element(document).ready(function () {
       if (name === oldName || name === '' || doc.name === name) {
         return;
       }
-      window.console.log(['filenameChanged', name, oldName, doc]);
       if (doc._id) {
-        queueDocUpdate(doc._id, {name: name, now: Date.now()});
+        queueDocUpdate(doc._id, {name: name, now: Date.now()}, null);
       } else {
         doc.name = name;
         doc.now = Date.now();
@@ -308,6 +414,7 @@ window.angular.element(document).ready(function () {
           CodeDB.getCode(doc).then(scoped(function (codeAndHistory) {
             $scope.filename = doc.name;
             $scope.currentDoc = doc;
+            $scope.lastState = {doc: doc, code: codeAndHistory};
             updateDocMenu(doc);
             putEditorState(editor, codeAndHistory);
           })).fail(genericFail);
@@ -331,7 +438,6 @@ window.angular.element(document).ready(function () {
   }
   angular.module('menuModule', [])
     .controller('MenuCtrl', MenuCtrl);
-  angular.bootstrap('#main-menu', ['menuModule']);
 
   // angular errors bootstrap
   function ErrorCtrl($scope) {
@@ -345,7 +451,8 @@ window.angular.element(document).ready(function () {
 
   angular.module('errorModule', [])
     .controller('ErrorCtrl', ErrorCtrl);
-  angular.bootstrap('#errors', ['errorModule']);
+
+  angular.bootstrap('body', ['menuModule', 'errorModule']);
   $('#errors ul.errors').on('click mouseover mouseout', 'li', function (e) {
     var s = angular.element(this).scope();
     var line = s.err.line - 1;
@@ -353,9 +460,38 @@ window.angular.element(document).ready(function () {
     editor.focus();
   });
 
+  function editorStateEq(a, b) {
+    // TODO: use this
+    var a_history = a.history;
+    var b_history = b.history;
+    return (a.code === b.code &&
+            Array.isArray(a_history) &&
+            Array.isArray(b_history) &&
+            a_history.length === b_history.length &&
+            a_history.every(function (x, i) { return x === b_history[i]; }));
+  }
+
+  function getEditorState(editor) {
+    return {code: editor.getValue(),
+            history: editor.getHistory(),
+            generation: editor.changeGeneration()};
+  }
+
+  function putEditorState(editor, val) {
+    sandboxWindow.postMessage({msg: 'exec', val: '', id: null}, '*');
+    editor.operation(function putEditorStateOp() {
+      var code = val.code || '';
+      var history = val.history || '';
+      editor.setValue(val.code || '');
+      editor.setHistory(val.history || EMPTY_HISTORY);
+      lastGeneration = {code: code, history: history, generation: editor.changeGeneration()};
+    });
+  }
+
   // CodeMirror startup
   lintOptions = {
     getAnnotations: CodeMirror.ccAsyncJavascriptValidator,
+    getState: getEditorState,
     async: true,
     delay: lintTime,
     callback: null
@@ -390,32 +526,6 @@ window.angular.element(document).ready(function () {
     $('#container').addClass('show');
     editor.refresh();
     editor.focus();
-  }
-
-  function editorStateEq(a, b) {
-    // TODO: use this
-    var a_history = a.history;
-    var b_history = b.history;
-    return (a.code === b.code &&
-            Array.isArray(a_history) &&
-            Array.isArray(b_history) &&
-            a_history.length === b_history.length &&
-            a_history.every(function (x, i) { return x === b_history[i]; }));
-  }
-
-  function getEditorState(editor) {
-    return {code: editor.getValue(), history: editor.getHistory()};
-  }
-
-  function putEditorState(editor, val) {
-    sandboxWindow.postMessage({msg: 'exec', val: '', id: 'putEditorState'}, '*');
-    editor.operation(function putEditorStateOp() {
-      var code = val.code || '';
-      var history = val.history || '';
-      editor.setValue(val.code || '');
-      editor.setHistory(val.history || EMPTY_HISTORY);
-      lastGeneration = {code: code, history: history, generation: editor.changeGeneration()};
-    });
   }
 
   // bootstrap sandbox
