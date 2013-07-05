@@ -447,6 +447,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     }
     var id = event.data.id;
     var code = event.data.val;
+    document.body.classList.toggle('not-running', code === '');
     var ast = instrumentAST(esprima.parse(code, {range: true, loc: true}));
     var genMap = escodegen.generate(ast, {sourceMap: true,
                                           sourceMapWithCode: true});

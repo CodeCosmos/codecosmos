@@ -5,6 +5,21 @@
 <style type="text/css">
 html { overflow: hidden; }
 body { margin: 0; padding: 0; height: 100%; }
+#not-running { display: none; }
+.not-running #not-running {
+display: block;
+position:absolute;
+top:0px;
+width: 100%;
+height: 100%;
+display: -webkit-box;
+background-color: #fff;
+background-image: linear-gradient(45deg, #EEE 25%, transparent 25%, transparent 75%, #EEE 75%, #EEE), linear-gradient(45deg, #EEE 25%, transparent 25%, transparent 75%, #EEE 75%, #EEE);
+background-size: 20px 20px;
+background-position: 0 0, 10px 10px;
+box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+}
+.not-running canvas { display: none; }
 </style>
 <script src="components/esprima/esprima.js"></script>
 <script src="components/estraverse/estraverse.js"></script>
@@ -15,5 +30,6 @@ body { margin: 0; padding: 0; height: 100%; }
 </head>
 <body>
 <canvas id="pjs"></canvas>
+<div id="not-running"></div>
 </body>
 </html>

@@ -7,7 +7,7 @@
   var FileReader = window.FileReader;
   var Pouch = window.Pouch;
   var Deferred = window.jQuery.Deferred;
-  var db = new Pouch('local-code', {auto_compaction: true});
+  var db = new Pouch('local-code', {auto_compaction: false});
   window._db = db;
 
   function serializeBlob(doc) {

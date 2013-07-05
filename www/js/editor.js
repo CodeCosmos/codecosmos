@@ -89,11 +89,21 @@ window.angular.element(document).ready(function () {
       }
     });
     if (errors.length === 0) {
-      var s = angular.element('#errors').scope().$apply(function (s) {
-        s.errors = [];
+      angular.element('#errors').scope().$apply(function ($scope) {
+        $scope.errors = [];
+        $scope.lintErrors = [];
       });
       angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.faceState = 'meh';
         $scope.postSandboxUpdate(ctx);
+      });
+    } else {
+      angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.faceState = 'meh';
+      });
+      angular.element('#errors').scope().$apply(function ($scope) {
+        $scope.errors = [];
+        $scope.lintErrors = errors;
       });
     }
   }
@@ -156,10 +166,12 @@ window.angular.element(document).ready(function () {
         $scope.explanation = explainError(err);
       });
       angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.faceState = 'frown';
         $scope.sandboxUpdateFail(id);
       });
     } else if (msg === 'success') {
       angular.element('#main-menu').scope().$apply(function ($scope) {
+        $scope.faceState = 'smile';
         $scope.sandboxUpdateSuccess(id);
       });
     }
@@ -290,20 +302,6 @@ window.angular.element(document).ready(function () {
           'index.html': {content: exportIndexHtml($scope.filename, GITHUB_SCRIPT_URLS, 'code.js')}
         }
       };
-      // This makes it take a while, so let's not do that for now.
-      /*
-      var sandboxScripts = $(sandboxWindow.document).find('script[data-export]');
-      window.console.log(sandboxScripts);
-      var d = $q.all(sandboxScripts.map(function (i, s) {
-        var url = s.src;
-        var fn = url.replace(/.*\//, '');
-        window.console.log([url, fn]);
-        return $http({method: 'GET', url: url, cache: true}).then(function (res) {
-          data.files[fn] = {content: res.data};
-        });
-      })).then(function gotScripts() {
-        window.console.log(['gotScripts', data]);
-       */
       $http({method: 'POST', url: 'https://api.github.com/gists', data: data}).
         success(function loadSuccess(data, status, headers, config) {
           $scope.shareUrl = 'http://bl.ocks.org/' + data.id;
@@ -314,6 +312,19 @@ window.angular.element(document).ready(function () {
         });
     }
     $scope.publishDoc = publishDoc;
+
+    function toggleRunning() {
+      $scope.running = !$scope.running;
+      // need to get out of the scope for now
+      window.setTimeout(function () {
+        if ($scope.running) {
+          forceRun(editor);
+        } else {
+          clearSandbox();
+        }
+      }, 0);
+    }
+    $scope.toggleRunning = toggleRunning;
 
     function getSandboxScripts() {
       var sandboxScripts = $(sandboxWindow.document).find('script[data-export]');
@@ -417,11 +428,13 @@ window.angular.element(document).ready(function () {
       if (id) {
         savePotentialUpdate(ctx);
       }
-      sandboxWindow.postMessage(
-        {msg: 'exec',
-         val: ctx.code,
-         id: {generation: ctx.generation, id: id}},
-        '*');
+      if ($scope.running) {
+        sandboxWindow.postMessage(
+          {msg: 'exec',
+           val: ctx.code,
+           id: {generation: ctx.generation, id: id}},
+          '*');
+      }
     }
     $scope.postSandboxUpdate = postSandboxUpdate;
     function sandboxUpdateSuccess(id) {
@@ -593,8 +606,12 @@ window.angular.element(document).ready(function () {
             generation: editor.changeGeneration()};
   }
 
-  function putEditorState(editor, val) {
+  function clearSandbox() {
     sandboxWindow.postMessage({msg: 'exec', val: '', id: null}, '*');
+  }
+
+  function putEditorState(editor, val) {
+    clearSandbox();
     editor.operation(function putEditorStateOp() {
       var code = val.code || '';
       var history = val.history || '';

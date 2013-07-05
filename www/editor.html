@@ -59,7 +59,7 @@
       #main-container .panel .content { display: table-cell; vertical-align:
       middle; height: 100%; width: 100%; line-height: 1.5em;
       padding-left: 8px; }
-      #main-container .panel .content .close-button { float: right; }
+      #main-container .panel .content .close-button { float: right; margin-right: 1px; }
 
       @-webkit-keyframes loading-pulse {
         from { opacity: 0.25; }
@@ -136,16 +136,14 @@
               </optgroup>
             </select>
           </li>
-          <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code"></button></li>
-          <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code"></button></li>
+          <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code" ng-click="toggleRunning()"></button></li>
+          <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code" ng-click="toggleRunning()"></button></li>
           <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName()"></button></li>
           <li><button class="icon-share icon-large tool" title="Publish this code" ng-click="publishDoc()"></button></li>
-          <li><button class="icon-cloud-download icon-large tool" title="Download a backup copy of all the code in this workspace" ng-click="downloadBackup()"></button></li>
+          <li><button class="icon-download-alt icon-large tool" title="Download a backup copy of all the code in this workspace" ng-click="downloadBackup()"></button></li>
         </ul>
         <ul class="right-menu">
-          <li><button class="icon-smile icon-large tool"></button></li>
-          <li><button class="icon-meh icon-large tool"></button></li>
-          <li><button class="icon-frown icon-large tool"></button></li>
+          <li><button class="icon-{{faceState}} icon-large tool"></button></li>
           <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
         </ul>
       </div>
@@ -153,7 +151,7 @@
            class="panel hide">
         <div class="content">
           Published to: <a href="{{ shareUrl }}" title="Right-click and Copy Link Address" target="_blank">{{ shareUrl }}</a>
-          <button class="close-button" ng-click="displaySharePanel = false">X</button>
+          <button class="close-button icon-large icon-remove" ng-click="displaySharePanel = false"></button>
         </div>
       </div>
       <div id="backup-panel" ng-class="{hide: !displayBackupPanel}"
@@ -161,7 +159,7 @@
         <div class="content">
           <span ng-show="backupPercent < 1">{{ 100 * backupPercent | number:0 }}% complete</span>
           <span ng-show="backupPercent >= 1">Click to download: <a href="#" download-url="backupUrl" download="codecosmos-backup.zip">codecosmos-backup.zip</a></span>
-          <button class="close-button" ng-click="displayBackupPanel = false">X</button>
+          <button class="close-button icon-large icon-remove" ng-click="displayBackupPanel = false"></button>
         </div>
       </div>
     </div>
