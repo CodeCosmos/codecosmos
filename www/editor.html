@@ -99,6 +99,7 @@
       #container.show { display: block; }
       #container { position:absolute; top: 2.5em; bottom: 0px; width: 100%; display: none; }
       #code { position:absolute; width: 50%; height: 100%; }
+      #temporary { position:absolute; width: 100%; height: 100%; }
       #display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
       .hide { display: none; }
       #main-container .hide { display: none; }
@@ -143,7 +144,23 @@
           <li><button class="icon-download-alt icon-large tool" title="Download a backup copy of all the code in this workspace" ng-click="downloadBackup()"></button></li>
         </ul>
         <ul class="right-menu">
-          <li><button class="icon-{{faceState}} icon-large tool"></button></li>
+          <li>
+            <button
+               ng-show="faceState == SMILE"
+               class="icon-smile icon-large tool"
+               title="Looks like everything is running ok!"
+               ng-click="faceClick()"></button>
+            <button
+               ng-show="faceState == FROWN"
+               class="icon-frown icon-large tool"
+               title="Time to figure out what caused that error&hellip;"
+               ng-click="faceClick()"></button>
+            <button
+               ng-show="faceState == MEH"
+               class="icon-meh icon-large tool"
+               title="This code won't run, maybe there's a missing semicolon?"
+               ng-click="faceClick()"></button>
+          </li>
           <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
         </ul>
       </div>
@@ -169,6 +186,7 @@
         <div id="sandbox-ctr">
           <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
+        <div id="temporary"></div>
         <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length}">
           <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
           <section class="explanation">

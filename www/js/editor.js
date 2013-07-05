@@ -27,6 +27,9 @@ window.angular.element(document).ready(function () {
   'use strict';
   var BLOB_TYPE = 'text/plain;charset=utf-8';
   var BLOB_NAME = 'history-code-blob';
+  var SMILE = 'smile';
+  var FROWN = 'frown';
+  var MEH = 'meh';
   var EMPTY_HISTORY = {'done': [], 'undone': []};
   var Uint8Array = window.Uint8Array;
   var URL = window.URL || window.webkitURL;
@@ -94,12 +97,12 @@ window.angular.element(document).ready(function () {
         $scope.lintErrors = [];
       });
       angular.element('#main-menu').scope().$apply(function ($scope) {
-        $scope.faceState = 'meh';
+        $scope.faceState = MEH;
         $scope.postSandboxUpdate(ctx);
       });
     } else {
       angular.element('#main-menu').scope().$apply(function ($scope) {
-        $scope.faceState = 'meh';
+        $scope.faceState = MEH;
       });
       angular.element('#errors').scope().$apply(function ($scope) {
         $scope.errors = [];
@@ -166,12 +169,12 @@ window.angular.element(document).ready(function () {
         $scope.explanation = explainError(err);
       });
       angular.element('#main-menu').scope().$apply(function ($scope) {
-        $scope.faceState = 'frown';
+        $scope.faceState = FROWN;
         $scope.sandboxUpdateFail(id);
       });
     } else if (msg === 'success') {
       angular.element('#main-menu').scope().$apply(function ($scope) {
-        $scope.faceState = 'smile';
+        $scope.faceState = SMILE;
         $scope.sandboxUpdateSuccess(id);
       });
     }
@@ -224,6 +227,9 @@ window.angular.element(document).ready(function () {
     $scope.displayBackupPanel = false;
     $scope.backupUrl = '';
     $scope.backupPercent = 0;
+    $scope.FROWN = FROWN;
+    $scope.MEH = MEH;
+    $scope.SMILE = SMILE;
 
     // Need some way to deal with writes that are going to conflight
     function scoped(fn) {
@@ -325,6 +331,54 @@ window.angular.element(document).ready(function () {
       }, 0);
     }
     $scope.toggleRunning = toggleRunning;
+
+    function faceClick() {
+      if ($('#temporary').html()) {
+        $('#temporary').html('');
+        return;
+      }
+      // little easter egg here.
+      var urls = {};
+      // Inappropriate :)
+      //'2k6rdrojAIk', // Skier
+      //'qzwqSaeqofg', // Porkchop Sandwiches
+      //'kvgsZ01AJhI', // Israeli Jet Fighters
+      //'sUlRnb8OfNE', // I Just Wanna Ride My Motorcycle
+      //'fw28i991-f4', // Dockside Bars
+      //'_G5Nro9VtvI', // Buzz Lightyear
+      urls[SMILE] = [
+        '29MJySO7PGg',
+        'lkzQd_pEsvU',
+        'q7fCMMFPflc',
+        'cPQwmAy4RAE',
+        '_YfjMZ6n8Bk',
+        'lMP8lPOKRGI',
+        'icQFpm_8sdI',
+        'mr3XB4ot3M4',
+        'oSDjSZF3tmI'];
+      urls[MEH] = [
+        '-x-r3T4LB4o',
+        'doDFHOTLMo4',
+        'YlcXposa2I8',
+        '09jpNq_lg_Q',
+        'I8lqSftB2bE'];
+      urls[FROWN] = [
+        'ysbbNHccY04',
+        '4-yOqx-6G7Y',
+        'BLz_eKLTMv4',
+        '7DJ6YvXyixw',
+        '2PnqgmzDc0k'];
+      function choose(lst) {
+        return lst[Math.floor(Math.random() * lst.length)];
+      }
+      var width = 600, height = 300, src = choose(urls[$scope.faceState]);
+      $('#temporary').html(
+        ['<iframe id="player" type="text/html" width="', $('#temporary').width(),
+         '" height="', $('#temporary').height(),
+         '" src="//www.youtube.com/embed/', src, '?enablejsapi=1&autoplay=1&origin=', window.location.origin,
+         '" frameborder="0"></iframe>'].join(''));
+    }
+    $scope.faceClick = faceClick;
 
     function getSandboxScripts() {
       var sandboxScripts = $(sandboxWindow.document).find('script[data-export]');
@@ -428,6 +482,7 @@ window.angular.element(document).ready(function () {
       if (id) {
         savePotentialUpdate(ctx);
       }
+      $('#temporary').html('');
       if ($scope.running) {
         sandboxWindow.postMessage(
           {msg: 'exec',
