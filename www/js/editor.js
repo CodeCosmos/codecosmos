@@ -40,6 +40,7 @@ window.angular.element(document).ready(function () {
   var Pouch = window.Pouch;
   var angular = window.angular;
   var $ = window.jQuery;
+  var _ = window._;
   var jz = window.jz;
   var CodeDB = window.CodeDB;
   var lintTime = 500;
@@ -56,16 +57,18 @@ window.angular.element(document).ready(function () {
   function exportIndexHtml(title, scriptURLs, mainScript) {
     return [
       '<!doctype html><html><head>',
-      '<title>' + $('<div/>').text(title).html() + '</title>',
+      '<title>' + _.escape(title) + '</title>',
       '<style type="text/css">',
       'html { overflow: hidden; }',
       'body { margin: 0; padding: 0; height: 100%; }',
       '</style>',
-      scriptURLs.map(function (url) { return '<script src="' + url + '"></script>'; }).join('\n'),
+      scriptURLs.map(function (url) {
+        return '<script src="' + _.escape(url) + '"></script>';
+      }).join('\n'),
       '</head>',
       '<body>',
       '<canvas id="pjs"></canvas>',
-      '<script src="' + mainScript + '"></script>',
+      '<script src="' + _.escape(mainScript) + '"></script>',
       '</body>',
       '</html>'].join('\n');
   }
@@ -332,13 +335,13 @@ window.angular.element(document).ready(function () {
     function toggleRunning() {
       $scope.running = !$scope.running;
       // need to get out of the scope for now
-      window.setTimeout(function () {
+      _.defer(function () {
         if ($scope.running) {
           forceRun(editor);
         } else {
           clearSandbox();
         }
-      }, 0);
+      });
     }
     $scope.toggleRunning = toggleRunning;
 
@@ -418,8 +421,8 @@ window.angular.element(document).ready(function () {
               '<h1>Your CodeCosmos:</h1>',
               '<ul>',
               docs.map(function (doc) {
-                return ['<li><a href="docs/', doc._id, '.html">',
-                        $('<div/>').text(doc.name).html(),
+                return ['<li><a href="docs/', _.escape(doc._id), '.html">',
+                        _.escape(doc.name),
                         '</a></li>'].join('');
               }).join('\n'),
               '</ul>',
@@ -458,7 +461,7 @@ window.angular.element(document).ready(function () {
           });
         });
       }, startD);
-      window.setTimeout(startD.resolve, 0);
+      _.defer(startD.resolve);
       d.then(function packExportZip() {
         // can't just return this because it's not a jQuery deferred!
         return wrapDeferred(jz.zip.pack({files: outfiles, level: 9}));
@@ -521,10 +524,6 @@ window.angular.element(document).ready(function () {
 
     $scope.updates = [];
     $scope.updateInProgress = null;
-    function queueDocUpdate(id, props, codeAndHistory) {
-      $scope.updates.push({id: id, props: props, code: codeAndHistory});
-      window.setTimeout(pollUpdateQueue, 0);
-    }
     function pollUpdateQueue() {
       if ($scope.updateInProgress !== null || $scope.updates.length === 0) {
         return;
@@ -556,12 +555,17 @@ window.angular.element(document).ready(function () {
       }
       var nextUpdate = scoped(function nextUpdate() {
         $scope.updateInProgress = null;
-        window.setTimeout(pollUpdateQueue, 0);
+        debouncedPollUpdateQueue();
       });
       $scope.updateInProgress = d
         .done(scoped(updateDoc))
         .fail(genericFail)
         .then(nextUpdate, nextUpdate);
+    }
+    var debouncedPollUpdateQueue = _.debounce(_.partial(_.defer, pollUpdateQueue), 250);
+    function queueDocUpdate(id, props, codeAndHistory) {
+      $scope.updates.push({id: id, props: props, code: codeAndHistory});
+      debouncedPollUpdateQueue();
     }
     $scope.$watch('filename', function watchFilenameChange(name, oldName) {
       // use angular.copy(doc) to prevent
@@ -713,6 +717,7 @@ window.angular.element(document).ready(function () {
     extraKeys: {
       "Alt-Space": "autocomplete",
       "Ctrl-R": forceRun,
+      "Ctrl-Enter": forceRun,
       "Tab": smartIndentAuto
     },
     matchBrackets: true,
