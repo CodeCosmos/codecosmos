@@ -333,8 +333,9 @@ window.angular.element(document).ready(function () {
     $scope.toggleRunning = toggleRunning;
 
     function faceClick() {
-      if ($('#temporary').html()) {
+      if ($('#temporary:visible').length) {
         $('#temporary').html('');
+        $('#temporary').hide();
         return;
       }
       // little easter egg here.
@@ -371,12 +372,13 @@ window.angular.element(document).ready(function () {
       function choose(lst) {
         return lst[Math.floor(Math.random() * lst.length)];
       }
-      var width = 600, height = 300, src = choose(urls[$scope.faceState]);
+      var src = choose(urls[$scope.faceState]);
+      var $display = $('#display');
       $('#temporary').html(
-        ['<iframe id="player" type="text/html" width="', $('#temporary').width(),
-         '" height="', $('#temporary').height(),
+        ['<iframe id="player" type="text/html" width="', $display.width(),
+         '" height="', $display.height(),
          '" src="//www.youtube.com/embed/', src, '?enablejsapi=1&autoplay=1&origin=', window.location.origin,
-         '" frameborder="0"></iframe>'].join(''));
+         '" frameborder="0"></iframe>'].join('')).show();
     }
     $scope.faceClick = faceClick;
 
@@ -482,7 +484,7 @@ window.angular.element(document).ready(function () {
       if (id) {
         savePotentialUpdate(ctx);
       }
-      $('#temporary').html('');
+      $('#temporary').html('').hide();
       if ($scope.running) {
         sandboxWindow.postMessage(
           {msg: 'exec',
