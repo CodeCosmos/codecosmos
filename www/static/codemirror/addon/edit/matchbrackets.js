@@ -1,0 +1,1 @@
+../../../../../components/codemirror/addon/edit/matchbrackets.js

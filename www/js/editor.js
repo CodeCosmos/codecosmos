@@ -12,7 +12,7 @@ window.WebFont.load({
       "static/source-code-pro/stylesheet.css",
       "static/kontrapunkt/stylesheet.css",
       "static/ubuntu/stylesheet.css",
-      "components/font-awesome/css/font-awesome.min.css"
+      "static/font-awesome/css/font-awesome.min.css"
     ]
   },
   fontactive: function fontactiveWrapper(familyName, fvd) {

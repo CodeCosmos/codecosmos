@@ -1,0 +1,1 @@
+../../../../../components/codemirror/addon/hint/javascript-hint.js
