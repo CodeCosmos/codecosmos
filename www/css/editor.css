@@ -1,0 +1,88 @@
+body { margin: 0; padding: 0; height: 100%; }
+.CodeMirror { border: 1px solid black; height: 100%; font-family: "SourceCodeProRegular"; font-size: 80%; box-sizing: border-box; }
+div.CodeMirror span.CodeMirror-matchingbracket { background-color: #00ffff; color: #000; }
+div.CodeMirror .sandbox-error { background-color: rgba(255, 0, 0, 0.1); }
+div.CodeMirror .sandbox-error-first { background-color: rgba(255, 0, 0, 0.15); }
+#main-menu { background-color: #eee; height: 2.5em; }
+#main-menu ul { font-family: "UbuntuRegular"; }
+#main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
+#main-menu button.tool { padding: 8px 3px; color: #333333; border: none; background-color: transparent; }
+#main-menu .right-menu { 
+    float: right;
+}
+#main-menu .right-menu i {
+    vertical-align: middle;
+    padding: 5px 3px;
+    line-height: 1.5em;
+    font-size: 100%;
+}
+#main-container .panel {
+    z-index: 10000;
+    background-color: #eee;
+    border: 1px solid black;
+    box-sizing: border-box;
+    position: absolute;
+    top: 2.5em;
+    height: 2em;
+    width: 50%;
+    display: table;
+}
+#main-container .panel .content { display: table-cell; vertical-align:
+                                  middle; height: 100%; width: 100%; line-height: 1.5em;
+                                  padding-left: 8px; }
+#main-container .panel .content .close-button { float: right; margin-right: 1px; }
+
+@-webkit-keyframes loading-pulse {
+    from { opacity: 0.25; }
+    to { opacity: 1.0; }
+}
+@keyframes loading-pulse {
+    from { opacity: 0.25; }
+    to { opacity: 1.0; }
+}
+#loading {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}
+#loading div {
+    display: table;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+#loading h1 {
+    height: 100%;
+    width: 100%;
+    display: table-cell;
+    vertical-align: middle;
+    -webkit-animation-name: loading-pulse;
+    -webkit-animation-duration: 2s;
+    -webkit-animation-direction: alternate;
+    -webkit-animation-iteration-count: infinite;
+    animation-name: loading-pulse;
+    animation-duration: 2s;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
+}
+
+#container.show { display: block; }
+#container { position:absolute; top: 2.5em; bottom: 0; width: 100%; display: none; }
+#code { position:absolute; width: 50%; height: 100%; }
+#temporary { position:absolute; }
+#display { position:absolute; width: 50%; left: 50%; height:100%; overflow: hidden; }
+.hide { display: none; }
+#main-container .hide { display: none; }
+#errors { position: absolute; left: 0; right: 0;
+          background-color: #ffffff; border: 1px solid black; display:
+          none; padding-left: 1em; padding-right: 1em;}
+#errors .icon-ambulance { color: red; text-shadow: 1px 1px #cc0000; }
+#errors.show { display: block; }
+#errors section { margin-bottom: 1em; }
+#errors section i { text-align: center; }
+#errors h1, #errors h2 { color: #999999; }
+#errors ul.errors { padding-left: 0; }
+#errors ul.errors li { display: block; cursor: pointer; }
+#errors ul.errors li span { text-decoration: underline; }
+#sandbox { position: absolute; background-color: #ccc; border: 1px solid black; width: 100%; height: 100%; box-sizing: border-box; }
