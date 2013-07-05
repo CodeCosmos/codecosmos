@@ -461,7 +461,6 @@ window.angular.element(document).ready(function () {
           });
         });
       }, startD);
-      _.defer(startD.resolve);
       d.then(function packExportZip() {
         // can't just return this because it's not a jQuery deferred!
         return wrapDeferred(jz.zip.pack({files: outfiles, level: 9}));
@@ -471,7 +470,7 @@ window.angular.element(document).ready(function () {
         $scope.backupPercent = 1;
         $scope.backupUrl = URL.createObjectURL(blob);
       })).fail(genericFail);
-      
+      startD.resolve(null);
     }
     $scope.downloadBackup = downloadBackup;
 
@@ -622,7 +621,11 @@ window.angular.element(document).ready(function () {
       }).
       error(function bootstrapError(data, status) {
         // TODO: This is not graceful at all! :(
-        $('#loading h1').text("Connectivity problem, please try reloading :(");
+        var errmsg = (window.location.protocol.indexOf('file') === 0) ?
+              "CodeCosmos needs to be run from a webserver (even locally)" :
+              "Connectivity problem, please try reloading :(";
+        $('#main-menu').hide();
+        $('#loading h1').text(errmsg);
       });
   }
 
