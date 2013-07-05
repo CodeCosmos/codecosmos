@@ -106,7 +106,17 @@ window.angular.element(document).ready(function () {
       });
       angular.element('#errors').scope().$apply(function ($scope) {
         $scope.errors = [];
-        $scope.lintErrors = errors;
+        // reduce the display a bit
+        $scope.lintErrors = errors.reduce(function reduceErrors(res, err) {
+          err.count = 1;
+          if (res.length === 0 ||
+              err.from.line !== res[res.length - 1].from.line) {
+            res.push(err);
+          } else {
+            res[res.length - 1].count += 1;
+          }
+          return res;
+        }, []);
       });
     }
   }
@@ -631,6 +641,7 @@ window.angular.element(document).ready(function () {
     $scope.message = '';
     $scope.explanation = '';
     $scope.errors = [];
+    $scope.lintErrors = [];
     $scope.friendlyName = friendlyName;
     $scope.log = function (x) { window.console.log(x); };
   }
@@ -640,8 +651,13 @@ window.angular.element(document).ready(function () {
 
   angular.bootstrap('body', ['menuModule', 'errorModule']);
   $('#errors ul.errors').on('click mouseover mouseout', 'li', function (e) {
-    var s = angular.element(this).scope();
-    var line = s.err.line - 1;
+    var err = angular.element(this).scope().err;
+    var line;
+    if (err.from) {
+      line = err.from.line;
+    } else {
+      line = err.line - 1;
+    }
     editor.setCursor(line, getLineIndent(editor, line));
     editor.focus();
   });

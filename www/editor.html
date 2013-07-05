@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>CodeCosmos</title>
+    <link rel="icon" type="image/jpeg" href="img/cc-icon.jpg">
     <link rel="stylesheet" href="static/pure/pure-min.css">
     <link rel="stylesheet" href="components/codemirror/lib/codemirror.css">
     <script src="static/webfontloader/webfont.js"></script>
@@ -105,9 +106,10 @@
       #main-container .hide { display: none; }
       #errors { position: absolute; left: 0; right: 0;
       background-color: #ffffff; border: 1px solid black; display:
-      none; padding-left: 1em; }
+      none; padding-left: 1em; padding-right: 1em;}
       #errors .icon-ambulance { color: red; text-shadow: 1px 1px #cc0000; }
       #errors.show { display: block; }
+      #errors section { margin-bottom: 1em; }
       #errors section i { text-align: center; }
       #errors h1, #errors h2 { color: #999999; }
       #errors .message { }
@@ -186,18 +188,40 @@
         <div id="sandbox-ctr">
           <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
-        <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length}">
-          <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
-          <section class="explanation">
-            <i class="icon-lightbulb icon-fixed-width"></i> {{explanation}}
-          </section>
-          <section class="message">
-            <i class="icon-bug icon-fixed-width"></i> {{message}}
-          </section>
+        <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length || lintErrors.length}">
+          <div ng-show="lintErrors.length > 0">
+            <h1 class="name"><i class="icon-meh"></i> Syntax Issues</h1>
+            <section class="explanation">
+              <i class="icon-lightbulb icon-fixed-width"></i>
+              JavaScript doesn't know how to interpret your code.
+              Mouse over the icons on the left to see more
+              detailed suggestions about how to make your code look
+              like valid JavaScript.
+            </section>
+            <section class="message">
+              <i class="icon-magic icon-fixed-width"></i>Try fixing the first error before
+                looking at the others. There's a chance this one problem
+                is the root cause of all the others!
+            </section>
+          </div>
+          <div ng-show="errors.length > 0">
+            <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
+            <section class="explanation">
+              <i class="icon-lightbulb icon-fixed-width"></i> {{explanation}}
+            </section>
+            <section class="message">
+              <i class="icon-bug icon-fixed-width"></i> {{message}}
+            </section>
+          </div>
           <h2>Try looking for the problem here:</h2>
           <ul class="errors">
             <li class="icon-arrow-right" ng-repeat="err in errors">
               <span>{{friendlyName(err.name)}} (line {{err.line}})</span>
+            </li>
+            <li class="icon-arrow-right" ng-repeat="err in lintErrors">
+              <span>Line {{err.from.line + 1}}
+                (<ng-pluralize count="err.count" when="{'other': '{} problems', 'one': '{{err.message}}'}"></ng-pluralize>)
+              </span>
             </li>
           </ul>
         </div>
