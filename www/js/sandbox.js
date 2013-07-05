@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
       processing.size(window.innerWidth, window.innerHeight);
     }
     function __once() {
+      processing.textFont(processing.loadFont("serif"), 20);
       processing.noLoop();
       processing.frameRate(20);
       __clear();
@@ -137,16 +138,6 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
         return a;
       }
     }
-    function __skipFirst(f) {
-      var first = true;
-      return function () {
-        if (first) {
-          first = false;
-        } else {
-          f();
-        }
-      };
-    }
     function __clear() {
       processing.background(255);
     }
@@ -160,8 +151,12 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     __f();
     processing.setup = __wrap(__setup, processing.setup);
     if (processing.draw === undefined) {
-      // hook redraw for resize events
-      processing.draw = __skipFirst(__f);
+      // Clear the log so it's not so obvious we're running this code twice.
+      var tinyLogDiv = window.document.querySelector('html > div > div[title="Close Log"]');
+      if (tinyLogDiv && tinyLogDiv.click) {
+        tinyLogDiv.click();
+      }
+      processing.draw = __f;
     }
   }
 
@@ -176,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     var __cont = true;
     var __errorHandler = false;
     var p = processing;
+    
     function __fail(err) {
       __cont = false;
       processing.exit();
@@ -213,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
       processing.size(window.innerWidth, window.innerHeight);
     }
     function __once() {
+      processing.textFont(processing.loadFont("serif"), 20);
       processing.noLoop();
       processing.frameRate(20);
       __clear();
@@ -229,18 +226,6 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
         return a;
       }
     }
-
-    function __skipFirst(f) {
-      var first = true;
-      return function () {
-        if (first) {
-          first = false;
-        } else {
-          f();
-        }
-      };
-    }
-      
     function __clear() {
       processing.background(255);
     }
@@ -267,8 +252,12 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     __f();
     processing.setup = __wrap(__setup, processing.setup);
     if (processing.draw === undefined) {
-      // hook redraw for resize events
-      processing.draw = __skipFirst(__f);
+      // Clear the log so it's not so obvious we're running this code twice.
+      var tinyLogDiv = window.document.querySelector('html > div > div[title="Close Log"]');
+      if (tinyLogDiv && tinyLogDiv.click) {
+        tinyLogDiv.click();
+      }
+      processing.draw = __f;
     }
     window.requestAnimationFrame(__resetCounter);
   }
@@ -473,6 +462,9 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     postSuccess(code, id);
   }
 
+  window._getPi = function () {
+    return pi;
+  };
   function postMessage(msg) {
     window.parent.postMessage(msg, '*');
   }

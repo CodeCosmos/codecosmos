@@ -1,28 +1,3 @@
-// bootstrap webfont first
-var fontactive = null;
-window.WebFont.load({
-  custom: {
-    families: [
-      'SourceCodeProRegular',
-      'UbuntuRegular',
-      'KontrapunktBold',
-      'FontAwesome'
-    ],
-    urls: [
-      "static/source-code-pro/stylesheet.css",
-      "static/kontrapunkt/stylesheet.css",
-      "static/ubuntu/stylesheet.css",
-      "static/font-awesome/css/font-awesome.min.css"
-    ]
-  },
-  fontactive: function fontactiveWrapper(familyName, fvd) {
-    'use strict';
-    if (fontactive) {
-      fontactive(familyName, fvd);
-    }
-  }
-});
-
 window.angular.element(document).ready(function () {
   'use strict';
   var BLOB_TYPE = 'text/plain;charset=utf-8';
@@ -39,6 +14,7 @@ window.angular.element(document).ready(function () {
   var CodeMirror = window.CodeMirror;
   var Pouch = window.Pouch;
   var angular = window.angular;
+  var Font = window.Font;
   var $ = window.jQuery;
   var _ = window._;
   var jz = window.jz;
@@ -125,7 +101,7 @@ window.angular.element(document).ready(function () {
   }
 
   function getLineIndent(cm, line) {
-    return cm.getLine(line).match(/^\s*/)[0].length;
+    return (cm.getLine(line) || '').match(/^\s*/)[0].length;
   }
 
   function smartIndentAuto(cm) {
@@ -728,12 +704,13 @@ window.angular.element(document).ready(function () {
     lintWith: lintOptions
   });
   editor.setCursor(1, 0);
-  // refresh after font loads
-  fontactive = function fontactive(fontName, fvd) {
-    if (fontName === 'SourceCodeProRegular') {
-      editor.refresh();
-    }
+
+  var sourceFont = new Font();
+  sourceFont.onload = function sourceFontLoaded() {
+    editor.refresh();
   };
+  sourceFont.fontFamily = 'SourceCodeProRegular';
+  sourceFont.src = sourceFont.fontFamily;
 
   function finishedLoading() {
     $('#loading').addClass('hide');
