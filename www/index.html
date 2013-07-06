@@ -145,44 +145,46 @@
           <div id="temporary"></div>
         </section>
       </div>
-      <div class="front-bg">
-        <img class="front-img" src="img/280046main_CassAcomposite_bkg.jpg">
-      </div>
-      <div class="login-container" ng-controller="LoginCtrl" ng-hide="username">
-        <div class="sign-in-form front-card">
-          <form class="pure-form pure-form-aligned">
-            <fieldset>
-              <legend>Have an account? <span>Sign in</span></legend>
-              <input type="text" placeholder="Username" ng-model="user.username" ng-disabled="signInDisabled" autofocus>
-              <input type="password" placeholder="Password" ng-model="user.password" ng-disabled="signInDisabled">
-              <button type="submit" class="pure-button sign-in-button"
-                      ng-click="signIn(user)"
-                      ng-disabled="signInDisabled">Sign in</button>
-            </fieldset>
-            <div class="error" ng-bind="signInError"></div>
-          </form>
+      <div class="login-controller" ng-controller="LoginCtrl" ng-hide="username">
+        <div class="front-bg">
+          <img class="front-img" ng-src="img/{{ backgroundImage }}">
         </div>
-        <div class="sign-up-form front-card">
-          <form class="pure-form pure-form-stacked">
-            <fieldset>
-              <legend>New to CodeCosmos? <span>Sign up</span></legend>
-              <input type="text" placeholder="Username"
-                     name="username"
-                     ng-model="user.username"
-                     ng-disabled="signInDisabled">
-              <input type="password" placeholder="Password"
-                     ng-model="user.password"
-                     ng-disabled="signInDisabled">
-              <input type="email" placeholder="Email address (optional)"
-                     ng-model="user.email"
-                     ng-disabled="signInDisabled">
-              <button type="submit" class="pure-button sign-up-button"
-                      ng-click="signUp(user)"
-                      ng-disabled="signInDisabled">
-                Sign up for CodeCosmos</button>
-            </fieldset>
-            <div class="error" ng-bind="signUpError"></div>
-          </form>
+        <div class="login-container">
+          <div class="sign-in-form front-card">
+            <form class="pure-form pure-form-aligned">
+              <fieldset>
+                <legend>Have an account? <span>Sign in</span></legend>
+                <input type="text" placeholder="Username" ng-model="user.username" ng-disabled="signInDisabled" autofocus>
+                <input type="password" placeholder="Password" ng-model="user.password" ng-disabled="signInDisabled">
+                <button type="submit" class="pure-button sign-in-button"
+                        ng-click="signIn(user)"
+                        ng-disabled="signInDisabled">Sign in</button>
+              </fieldset>
+              <div class="error" ng-bind="signInError"></div>
+            </form>
+          </div>
+          <div class="sign-up-form front-card">
+            <form class="pure-form pure-form-stacked">
+              <fieldset>
+                <legend>New to CodeCosmos? <span>Sign up</span></legend>
+                <input type="text" placeholder="Username"
+                       name="username"
+                       ng-model="user.username"
+                       ng-disabled="signInDisabled">
+                <input type="password" placeholder="Password"
+                       ng-model="user.password"
+                       ng-disabled="signInDisabled">
+                <input type="email" placeholder="Email address (optional)"
+                       ng-model="user.email"
+                       ng-disabled="signInDisabled">
+                <button type="submit" class="pure-button sign-up-button"
+                        ng-click="signUp(user)"
+                        ng-disabled="signInDisabled">
+                  Sign up for CodeCosmos</button>
+              </fieldset>
+              <div class="error" ng-bind="signUpError"></div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -4,12 +4,17 @@
   var angular = root.angular;
   var _ = root._;
   var CodeDB = root.CodeDB;
+  var images = [
+    '280046main_CassAcomposite_bkg.jpg',
+    'hs-2009-05-a-full_bkg.jpg',
+    'hs-2010-13-a-full_bkg.jpg'];
   function LoginCtrl($scope, $http) {
     var defaults = {username: '', password: '', email: ''};
     $scope.user = _.extend({}, defaults);
     $scope.signInError = '';
     $scope.signUpError = '';
     $scope.signInDisabled = false;
+    $scope.backgroundImage = images[Math.floor(Math.random() * images.length)];
     function focus(sel) {
       _.defer(function () { angular.element(sel).focus(); });
     }
