@@ -14,6 +14,7 @@
     $scope.password = null;
     $scope.docs = [];
     $scope.db = null;
+    $scope.dbChanges = null;
     $scope.remoteDb = null;
     $scope.remoteDbUrl = REMOTE_DB_URL;
     $scope.session = null;
@@ -40,6 +41,9 @@
       }
       $scope.session = session;
     };
+    $scope.dbChanged = function dbChanged(change) {
+      $window.console.log(['dbChanged', change]);
+    };
     $scope.$watch('session', function watchSession(newValue, oldValue) {
       // Changing the session will open or close the database 
       // and set username/password/docs.
@@ -50,20 +54,42 @@
         if ($scope.db) {
           $scope.db.close();
         }
+        if ($scope.remoteDb) {
+          $scope.remoteDb.close();
+        }
+        if ($scope.dbChanges) {
+          $scope.dbChanges.cancel();
+        }
         if (newValue) {
-          $scope.db = new root.CodeDB(LOCAL_DB_PREFIX + session.username);
+          var db = new CodeDB(LOCAL_DB_PREFIX + session.username);
+          $scope.db = db;
+          $scope.dbChanges = $scope.db.changes({
+            continuous: true,
+            conflicts: true,
+            onChange: function(change) {
+                $scope.$apply(function () {
+                  if (db === $scope.db) {
+                    $scope.dbChanged(change);
+                  }
+                });
+            }});
+        } else {
+          $scope.db = null;
+          $scope.remoteDb = null;
+          $scope.dbChanges = null;
         }
       }
       fields.forEach(function (field) {
         $scope[field] = session[field] || null;
       });
       /* All of the fades in and out */
-      angular.element('.front-bg,.login-container').fadeTo(400, (newValue ? 0 : 1));
-      angular.element('#main-container,#container').fadeTo(400, (newValue ? 1 : 0), function () {
+      var loggedIn = !!newValue;
+      angular.element('.front-bg,.login-container').show().fadeTo(400, (loggedIn ? 0 : 1)).toggle(!loggedIn);
+      angular.element('#main-container,#container').show().fadeTo(400, (loggedIn ? 1 : 0), function () {
         $scope.$apply(function () {
           $scope.containerVisible = !!newValue;
         });
-      });
+      }).toggle(loggedIn);
     });
     function onsessionstorage(newValue) {
       $scope.replaceSession(fromStorage(newValue), true);

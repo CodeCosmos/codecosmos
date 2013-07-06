@@ -42,29 +42,33 @@
     var sandboxWindow = $window.document.getElementById('sandbox').contentWindow;
 
     var $httpCache = $cacheFactory.get('$http');
-    $scope.running = true;
-    $scope.placeholder = 'Unsaved\u2026';
-    $scope.toJson = angular.toJson;
-    $scope.loading_sentinel = '';
-    $scope.filename = '';
-    $scope.loaded_file = $scope.loading_sentinel;
-    $scope.myCode = {name: 'My Code',
-                     files: []};
-    $scope.groups = [];
-    $scope.currentDoc = null;
-    $scope.shareUrl = '';
-    $scope.displaySharePanel = false;
-    $scope.displayBackupPanel = false;
-    $scope.backupUrl = '';
-    $scope.backupPercent = 0;
     $scope.FROWN = 'frown';
     $scope.MEH = 'meh';
     $scope.SMILE = 'smile';
-    $scope.$watch('bootstrapCode', function watchBootstrapCode(newValue, oldValue) {
-      if (newValue) {
-        $scope.groups = [$scope.myCode, newValue];
+    function initialize() {
+      $scope.running = true;
+      $scope.placeholder = 'Unsaved\u2026';
+      $scope.toJson = angular.toJson;
+      $scope.loading_sentinel = '';
+      $scope.filename = '';
+      $scope.loaded_file = $scope.loading_sentinel;
+      $scope.myCode = {name: 'My Code',
+                       files: []};
+      $scope.currentDoc = null;
+      $scope.shareUrl = '';
+      $scope.displaySharePanel = false;
+      $scope.displayBackupPanel = false;
+      $scope.backupUrl = '';
+      $scope.backupPercent = 0;
+      if ($scope.bootstrapCode) {
+        $scope.groups = [$scope.myCode, $scope.bootstrapCode];
+      } else {
+        $scope.groups = [];
       }
-    });
+    }
+    initialize();
+    $scope.$watch('bootstrapCode', initialize);
+    $scope.$watch('session', initialize);
 
     // Need some way to deal with writes that are going to conflict
     function scoped(fn) {

@@ -213,7 +213,10 @@
     $scope.editor.setCursor(1, 0);
 
     // Make sure to set up the editor properly when we first see it
-    $scope.$watch('containerVisible', function watchSession(newValue, oldValue) {
+    $scope.$watch('session', function watchSession(newValue, oldValue) {
+      $scope.putEditorState(NO_STATE);
+    });
+    $scope.$watch('containerVisible', function watchContainerVisible(newValue, oldValue) {
       var editor = $scope.editor;
       if (newValue) {
         editor.refresh();

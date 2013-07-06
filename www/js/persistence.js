@@ -95,6 +95,10 @@
           return self.updateCode(doc, codeAndHistory);
         });
     },
+    changes: function CodeDB_changes(opts) {
+      // pure passthrough
+      return this.db.changes(opts);
+    },
     close: function CodeDB_close() {
       return this.db.close();
     }

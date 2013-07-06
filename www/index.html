@@ -79,6 +79,7 @@
             <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code" ng-click="toggleRunning()"></button></li>
           </ul>
           <ul class="right-menu">
+            <span ng-bind="username"></span>
             <li><button class="icon-off icon-large tool" title="Logout {{ username }}" ng-click="logout()"></button></li>
           </ul>
         </div>
