@@ -63,14 +63,15 @@ module.exports = function (grunt) {
           'box-sizing': false,
           'box-model': false,
           'qualified-headings': false,
-          'unique-headings': false
+          'unique-headings': false,
+          'gradients': false
         },
         src: ['www/css/*.css']
       }
     },
     watch: {
-      files: ['<%= jshint.files %>'],
-      tasks: ['jshint']
+      files: ['<%= jshint.files %>', '<%= csslint.lax.src %>'],
+      tasks: ['jshint', 'csslint']
     },
     copy: {
       main: {
