@@ -8,6 +8,12 @@
   var Blob = root.Blob;
   var Uint8Array = root.Uint8Array;
   var URL = root.URL || root.webkitURL;
+  var Deferred = $.Deferred;
+  function reject(err) {
+    var d = new Deferred();
+    d.reject(err);
+    return d;
+  }
 
   var GITHUB_SCRIPT_URLS = [
     '//cdnjs.cloudflare.com/ajax/libs/processing.js/1.4.1/processing-api.min.js',
@@ -32,9 +38,13 @@
       '</html>'].join('\n');
   }
 
-  function genericFail(err) {
-    window.console.log(["Don't know what to do with this error", err]);
-    throw err;
+  function genericFail() {
+    var info = _.toArray(arguments);
+    return function genericFailWrapper(err) {
+      window.console.log(['genericFail', info.concat(arguments)]);
+      // return reject(err);
+      throw err;
+    };
   }
 
   // angular menu bootstrap
@@ -52,9 +62,10 @@
       $scope.loading_sentinel = '';
       $scope.filename = '';
       $scope.loaded_file = $scope.loading_sentinel;
+      $scope.docDict = {};
       $scope.myCode = {name: 'My Code',
                        files: []};
-      $scope.currentDoc = null;
+      $scope.currentDocId = null;
       $scope.shareUrl = '';
       $scope.displaySharePanel = false;
       $scope.displayBackupPanel = false;
@@ -70,6 +81,15 @@
     $scope.$watch('bootstrapCode', initialize);
     $scope.$watch('session', initialize);
 
+    function getCurrentDoc() {
+      return $scope.docDict[$scope.currentDocId] || null;
+    }
+
+    function isVisible(doc) {
+      return doc.deleted !== true;
+    }
+    $scope.isVisible = isVisible;
+
     // Need some way to deal with writes that are going to conflict
     function scoped(fn) {
       return function scoped$wrapper() {
@@ -82,37 +102,12 @@
     function newestFirst(a, b) {
       return b.now - a.now;
     }
-    function updateDoc(doc) {
-      window.console.log(['updateDoc', doc]);
-      var oldDoc = $scope.currentDoc;
-      // update the doc to the latest state
-      if (oldDoc === null || oldDoc._id === doc._id) {
-        $scope.currentDoc = doc;
-      }
-      updateDocMenu(doc);
-    }
-    function updateDocMenu(doc) {
-      // update the menu, this has to happen in-place
-      var files = $scope.myCode.files;
-      var id = doc._id;
-      // remove any existing doc
-      for (var i = 0; i < files.length; i++) {
-        if (files[i]._id === id) {
-          files.splice(i, 1);
-          break;
-        }
-      }
-      // insert the new one and sort
-      files.push(doc);
-      files.sort(newestFirst);
-    }
     function copyDoc() {
-      $scope.currentDoc = null;
+      $scope.currentDocId = null;
       $scope.filename = '';
     }
     function isFileCurrent(file) {
-      var doc = $scope.currentDoc;
-      return (doc && doc._id && doc._id === file._id);
+      return ($scope.currentDocId === file._id);
     }
     $scope.lastState = null;
     $scope.isFileCurrent = isFileCurrent;
@@ -122,21 +117,12 @@
     }
     $scope.focusName = focusName;
     function trashDoc() {
-      var doc = angular.copy($scope.currentDoc || {});
-      if (!doc._id) {
-        return;
+      var doc = getCurrentDoc();
+      if (doc) {
+        $scope.db.removeDoc(doc).fail(genericFail('trashDoc', doc));
       }
-      $scope.db.removeDoc(doc).done(scoped(function removeDocSuccess(response) {
-        var files = $scope.myCode.files;
-        for (var i = 0; i < files.length; i++) {
-          if (files[i]._id === doc._id) {
-            files.splice(i, 1);
-            break;
-          }
-        }
-        // this deletes it from the UI
-        copyDoc();
-      })).fail(genericFail);
+      // this deletes it from the UI
+      copyDoc();
     }
     $scope.trashDoc = trashDoc;
     function publishDoc() {
@@ -186,28 +172,13 @@
       //'fw28i991-f4', // Dockside Bars
       //'_G5Nro9VtvI', // Buzz Lightyear
       var urls = {
-        smile: [
-          '29MJySO7PGg',
-          'lkzQd_pEsvU',
-          'q7fCMMFPflc',
-          'cPQwmAy4RAE',
-          '_YfjMZ6n8Bk',
-          'lMP8lPOKRGI',
-          'icQFpm_8sdI',
-          'mr3XB4ot3M4',
-          'oSDjSZF3tmI'],
-        meh: [
-          '-x-r3T4LB4o',
-          'doDFHOTLMo4',
-          'YlcXposa2I8',
-          '09jpNq_lg_Q',
-          'I8lqSftB2bE'],
-        frown: [
-          'ysbbNHccY04',
-          '4-yOqx-6G7Y',
-          'BLz_eKLTMv4',
-          '7DJ6YvXyixw',
-          '2PnqgmzDc0k']};
+        smile: ['29MJySO7PGg', 'lkzQd_pEsvU', 'q7fCMMFPflc', 'cPQwmAy4RAE',
+                '_YfjMZ6n8Bk', 'lMP8lPOKRGI', 'icQFpm_8sdI', 'mr3XB4ot3M4',
+                'oSDjSZF3tmI'],
+        meh: ['-x-r3T4LB4o', 'doDFHOTLMo4', 'YlcXposa2I8', '09jpNq_lg_Q',
+              'I8lqSftB2bE'],
+        frown: ['ysbbNHccY04', '4-yOqx-6G7Y', 'BLz_eKLTMv4', '7DJ6YvXyixw',
+                '2PnqgmzDc0k']};
       function choose(lst) {
         return lst[Math.floor(Math.random() * lst.length)];
       }
@@ -234,7 +205,7 @@
     }
 
     function wrapDeferred(other) {
-      var d = new $.Deferred();
+      var d = new Deferred();
       other.then(function resolve() { d.resolve.apply(d, arguments); },
                  function reject() { d.reject.apply(d, arguments); });
       return d;
@@ -295,7 +266,7 @@
         current = total;
         $scope.backupPercent = 1;
         $scope.backupUrl = URL.createObjectURL(blob);
-      })).fail(genericFail);
+      })).fail(genericFail('downloadBackup'));
       startD.resolve(null);
     }
     $scope.downloadBackup = downloadBackup;
@@ -317,8 +288,7 @@
 
     function postSandboxUpdate(ctx) {
       // need a good way to track history here :(
-      var doc = $scope.currentDoc;
-      var id = doc ? doc._id : null;
+      var id = $scope.currentDocId;
       if (id) {
         savePotentialUpdate(ctx);
       }
@@ -362,7 +332,7 @@
           acc.doc = $.extend(doc, update.props);
         }
         return acc;
-      }, {code: null, doc: angular.copy($scope.currentDoc)});
+      }, {code: null, doc: angular.copy(getCurrentDoc() || {})});
       $scope.updates = [];
       var ls = $scope.lastState || {doc: {}, code: {}};
       if (ls.doc && ls.doc.name === acc.doc.name && ls.doc._id === acc.doc._id) {
@@ -373,10 +343,15 @@
       var db = $scope.db;
       var d = db.updateDoc(acc.doc);
       if (acc.code !== null) {
-        d = d.then(function doCodeUpdate(doc) {
-          return db.updateCode(doc, acc.code).done(function () {
-            $scope.lastState = {doc: doc, code: acc.code};
-          });
+        d = d
+          .then(function updatedDoc(res) {
+            // re-fetch to be sure we don't conflict
+            window.console.log(['updatedDoc', res]);
+            return db.getDoc(acc.doc);
+          }).then(function doCodeUpdate(doc) {
+            return db.updateCode(doc, acc.code).done(function () {
+              $scope.lastState = {doc: doc, code: acc.code};
+            });
         });
       }
       var nextUpdate = scoped(function nextUpdate() {
@@ -384,32 +359,33 @@
         debouncedPollUpdateQueue();
       });
       $scope.updateInProgress = d
-        .done(scoped(updateDoc))
-        .fail(genericFail)
-        .then(nextUpdate, nextUpdate);
+        .done(function (doc) {
+          window.console.log(['update happened', doc]);
+        }).fail(genericFail('pollUpdateQueue', acc)).then(nextUpdate, nextUpdate);
     }
     var debouncedPollUpdateQueue = _.debounce(_.partial(_.defer, pollUpdateQueue), 250);
     function queueDocUpdate(id, props, codeAndHistory) {
       $scope.updates.push({id: id, props: props, code: codeAndHistory});
       debouncedPollUpdateQueue();
     }
-    $scope.$watch('filename', function watchFilenameChange(name, oldName) {
+    function watchFilenameChange(name, oldName) {
       // use angular.copy(doc) to prevent
       // $$hashKey from being serialized
-      var doc = angular.copy($scope.currentDoc || {});
-      if (name === oldName || name === '' || doc.name === name) {
+      var doc = getCurrentDoc();
+      if (name === oldName || name === '' || (doc && doc.name === name)) {
         return;
       }
-      if (doc._id) {
-        queueDocUpdate(doc._id, {name: name, now: Date.now()}, null);
+      var updatedProps = {name: name, now: Date.now()};
+      if (doc) {
+        queueDocUpdate(doc._id, updatedProps, null);
       } else {
-        doc.name = name;
-        doc.now = Date.now();
-        $scope.db.createDoc(doc, $scope.getEditorState())
-          .done(scoped(updateDoc))
-          .fail(genericFail);
+        $scope.db.createDoc(updatedProps, $scope.getEditorState())
+          .done(scoped(function (doc) {
+            $scope.currentDocId = doc._id;
+          })).fail(genericFail('watchFilenameChange create', doc));
       }
-    });
+    }
+    $scope.$watch('filename', watchFilenameChange);
     $scope.loadFile = function loadFile() {
       if ($scope.loaded_file !== $scope.loading_sentinel) {
         var file = angular.fromJson($scope.loaded_file);
@@ -425,18 +401,17 @@
               window.console.log(['load error :(', data, status]);
             });
         } else if (file._id) {
-          var doc = angular.copy(file);
-          $scope.db.getCode(doc).then(scoped(function (codeAndHistory) {
-            $scope.filename = doc.name;
-            $scope.currentDoc = doc;
-            $scope.lastState = {doc: doc, code: codeAndHistory};
-            updateDocMenu(doc);
+          $scope.db.getCode(file).then(scoped(function (codeAndHistory) {
+            $scope.filename = file.name;
+            $scope.currentDocId = file._id;
+            $scope.lastState = {doc: angular.copy(file), code: codeAndHistory};
             $scope.putEditorState(codeAndHistory);
-          })).fail(genericFail);
+          })).fail(genericFail('loadFile', file));
         }
         $scope.loaded_file = $scope.loading_sentinel;
       }
     };
+    /*
     $scope.$watch('db', function watchDb(newValue, oldValue) {
       if (newValue) {
         $scope.db.getDocList().done(scoped(function docSuccess(docs) {
@@ -445,6 +420,47 @@
         })).fail(genericFail);
       }
     });
+    */
+    function removeDocFromFiles(doc) {
+      if ($scope.docDict.hasOwnProperty(doc._id)) {
+        var files = $scope.myCode.files;
+        for (var i = 0, ix = files.length; i < ix; i++) {
+          if (files[i]._id === doc._id) {
+            files.splice(i, 1);
+            break;
+          }
+        }
+        delete $scope.docDict[doc._id];
+      }
+    }
+    function getDoc(doc) {
+      var db = $scope.db;
+      return db.getDoc(doc).then(scoped(function getDocSuccess(doc) {
+        if (db !== $scope.db) {
+          // db has changed, don't bother doing anything.
+          return reject(new Error('db has changed'));
+        }
+        removeDocFromFiles(doc);
+        $scope.docDict[doc._id] = doc;
+        $scope.myCode.files.push(doc);
+        $scope.myCode.files.sort(newestFirst);
+        return doc;
+      })).fail(genericFail('getDoc', doc));
+    }
+    $scope.getDoc = getDoc;
+    function dbChanged(event, change) {
+      var doc = $scope.docDict[change.id] || null;
+      window.console.log(['dbChanged', arguments, doc]);
+      if (change.deleted) {
+        if (doc) {
+          doc.deleted = true;
+        }
+      } else if (doc === null || doc._rev !== _.last(change.changes).rev) {
+        $scope.getDoc({_id: change.id});
+      }
+    }
+    $scope.$on('dbChanged', dbChanged);
+
   }
   window.MenuCtrl = MenuCtrl;
 }).call(this);

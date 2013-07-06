@@ -6,21 +6,34 @@
   var CodeDB = root.CodeDB;
   
   var LOCAL_DB_PREFIX = 'codecosmos-';
+  var REMOTE_DB_PREFIX = 'userdb-';
   var SESSION_KEY = LOCAL_DB_PREFIX + '$session';
   var REMOTE_DB_URL = 'https://etrepum.iriscouch.com:6984/';
   function AppCtrl($scope, $http, $window) {
+    // this is the current deferred for getting the db
+    $scope.getDbHandle = null;
     $scope.session = null;
     $scope.username = null;
     $scope.password = null;
     $scope.docs = [];
     $scope.db = null;
     $scope.dbChanges = null;
-    $scope.remoteDb = null;
+    $scope.dbReplication = null;
     $scope.remoteDbUrl = REMOTE_DB_URL;
     $scope.session = null;
     $scope.containerVisible = false;
     $scope.bootstrapCode = null;
     var localStorage = $window.localStorage;
+    function scoped(fn) {
+      return function scoped$wrapper() {
+        var self = this;
+        var args = _.toArray(arguments);
+        return $scope.$apply(function () {
+          return fn.apply(self, args);
+        });
+      };
+    }
+
     function fromStorage(serializedSession) {
       return serializedSession ? angular.fromJson(serializedSession) : null;
     }
@@ -41,42 +54,67 @@
       }
       $scope.session = session;
     };
-    $scope.dbChanged = function dbChanged(change) {
-      $window.console.log(['dbChanged', change]);
+    $scope.setDb = function setDb(db) {
+      if ($scope.db) {
+        $scope.db.close();
+        $scope.db = null;
+      }
+      if ($scope.dbReplication) {
+        $scope.dbReplication.cancel();
+        $scope.dbReplication = null;
+
+      }
+      if ($scope.dbChanges) {
+        window.console.log(['would cancel dbChanges']);
+        $scope.dbChanges.cancel();
+        $scope.dbChanges = null;
+      }
+      if (db) {
+        $scope.db = db;
+        var changes = $scope.db.changes({
+          continuous: true,
+          conflicts: true,
+          complete: function(err, res) {
+            window.console.log(['changes_complete', db === $scope.db, err, res]);
+          },
+          onChange: function(change) {
+            $scope.$apply(function () {
+              if (db === $scope.db) {
+                $scope.$broadcast('dbChanged', change);
+              }
+            });
+          }});
+        window.console.log(['changes', changes]);
+        $scope.dbChanges = changes;
+        $scope.dbReplication = db.startReplication({url: $scope.remoteDbUrl, user: $scope.session});
+      }
     };
     $scope.$watch('session', function watchSession(newValue, oldValue) {
       // Changing the session will open or close the database 
       // and set username/password/docs.
       var fields = ['username', 'password'];
       var session = newValue || {};
+      $scope.getDbHandle = null;
+      window.console.log(['watchSession', $scope.username, session.username, $scope.dbChanges]);
       if ($scope.username !== session.username) {
         $scope.docs.splice(0, $scope.docs.length);
-        if ($scope.db) {
-          $scope.db.close();
-        }
-        if ($scope.remoteDb) {
-          $scope.remoteDb.close();
-        }
-        if ($scope.dbChanges) {
-          $scope.dbChanges.cancel();
-        }
+        $scope.setDb(null);
         if (newValue) {
-          var db = new CodeDB(LOCAL_DB_PREFIX + session.username);
-          $scope.db = db;
-          $scope.dbChanges = $scope.db.changes({
-            continuous: true,
-            conflicts: true,
-            onChange: function(change) {
-                $scope.$apply(function () {
-                  if (db === $scope.db) {
-                    $scope.dbChanged(change);
-                  }
-                });
-            }});
-        } else {
-          $scope.db = null;
-          $scope.remoteDb = null;
-          $scope.dbChanges = null;
+          var localDbUrl = LOCAL_DB_PREFIX + session.username;
+          var getDbHandle = CodeDB.getCodeDB(localDbUrl).then(
+            scoped(function gotLocalDb(db) {
+              window.console.log(['gotLocalDb', getDbHandle === $scope.getDbHandle]);
+              if (getDbHandle === $scope.getDbHandle) {
+                $scope.setDb(db);
+              }
+            }),
+            scoped(function failedToGetLocalDb(err) {
+              // TODO: make an error happen here somehow
+              window.console.log(['failedToGetLocalDb', err]);
+              $scope.setDb(null);
+              $scope.replaceSession(null);
+            }));
+          $scope.getDbHandle = getDbHandle;
         }
       }
       fields.forEach(function (field) {

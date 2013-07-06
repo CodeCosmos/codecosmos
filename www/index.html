@@ -48,7 +48,7 @@
                 <option value="">Load&hellip;</option>
                 <optgroup ng-repeat="group in groups" label="{{group.name}}">
                   <option
-                     ng-repeat="file in group.files"
+                     ng-repeat="file in group.files | filter:isVisible"
                      ng-disabled="isFileCurrent(file)"
                      value="{{ toJson(file) }}">{{file.name}}</option>
                 </optgroup>

@@ -47,25 +47,41 @@
     return d;
   }
 
-  function CodeDB(name, opts) {
-    var defaults = {auto_compaction: true};
-    this.db = new Pouch(name, _.defaults(opts || {}, defaults));
+  function getPouch(name, options) {
+    var d = new Deferred();
+    // ensure this is never resolved in the same call stack so the deferred
+    // can be used as a handle to see if this is the current request.
+    _.defer(function () {
+      var _db = new Pouch(name, options, function dbCallback(err, success) {
+        if (err) {
+          d.reject(err);
+        } else {
+          d.resolve(success);
+        }
+      });
+    });
+    return d;
+  }
+
+  function CodeDB(db, name, opts) {
+    this._db = db;
+    this._remoteDb = null;
+    this._replicateTo = null;
+    this._replicateFrom = null;
   }
   CodeDB.prototype = _.extend(CodeDB.prototype, {
     getDoc: function CodeDB_getDoc(doc) {
-      return dm(this.db, 'get', doc._id, {});
+      return dm(this._db, 'get', doc._id, {});
     },
     updateDoc: function CodeDB_updateDoc(doc) {
       var self = this;
-      return dm(this.db, 'put', doc, {}).then(function didPut() {
-        return self.getDoc(doc);
-      });
+      return dm(this._db, 'put', doc, {});
     },
     removeDoc: function CodeDB_removeDoc(doc) {
-      return dm(this.db, 'remove', doc, {});
+      return dm(this._db, 'remove', doc, {});
     },
     getCode: function CodeDB_getCode(doc) {
-      return dm(this.db, 'getAttachment', doc._id, BLOB_NAME, {}).then(
+      return dm(this._db, 'getAttachment', doc._id, BLOB_NAME, {}).then(
         deserializeBlob);
     },
     updateCode: function CodeDB_updateCode(doc, codeAndHistory) {
@@ -74,21 +90,21 @@
       if (!doc._attachments) {
         doc._attachments = {};
       }
-      return dm(this.db, 'putAttachment', doc._id, BLOB_NAME, doc._rev, blob, BLOB_TYPE).then(
-        function getUpdatedDoc() {
-          return self.getDoc(doc);
+      return dm(this._db, 'putAttachment', doc._id, BLOB_NAME, doc._rev, blob, BLOB_TYPE).then(
+        function passthroughDoc() {
+          return doc;
         });
     },
     // Unwrapped API methods
     getDocList: function CodeDB_getDocList() {
-      return dm(this.db, 'allDocs', {include_docs: true}).then(
+      return dm(this._db, 'allDocs', {include_docs: true}).then(
         function dbAllDocs(res) {
           return _.pluck(res.rows, 'doc');
         });
     },
     createDoc: function CodeDB_createDoc(doc, codeAndHistory) {
       var self = this;
-      return dm(this.db, 'post', doc, {}).
+      return dm(this._db, 'post', doc, {}).
         then(function dbPost(response) {
           doc._id = response.id;
           doc._rev = response.rev;
@@ -97,10 +113,61 @@
     },
     changes: function CodeDB_changes(opts) {
       // pure passthrough
-      return this.db.changes(opts);
+      return this._db.changes(opts);
     },
     close: function CodeDB_close() {
-      return this.db.close();
+      return this._db.close();
+    },
+    startReplication: function startReplication(opts) {
+      var self = this;
+      var otherDbUrl = opts.url + this.constructor.remoteDbName(opts.user) + '/';
+      var dbOpts = {auth: {username: opts.user.username,
+                           password: opts.user.password},
+                    xhrFields: {withCredentials: true}};
+      var promise = {
+        _canceled: false,
+        _remoteDb: null,
+        _replicateTo: null,
+        _replicateFrom: null,
+        cancel: function CodeDB_replication_promise_cancel() {
+          if (promise._canceled) {
+            return;
+          }
+          promise._canceled = true;
+          if (promise._replicateFrom) {
+            promise._replicateFrom.cancel();
+            promise._replicateFrom = null;
+          }
+          if (promise._replicateTo) {
+            promise._replicateTo.cancel();
+            promise._replicateTo = null;
+          }
+          if (promise._remoteDb) {
+            promise._remoteDb.close();
+            promise._remoteDb = null;
+          }
+        }
+      };
+      var otherDb = new Pouch(otherDbUrl, dbOpts, function (err, remoteDb) {
+        window.console.log(['otherDb', err, remoteDb]);
+        if (err) {
+          promise.cancel();
+        } else if (promise._canceled) {
+          remoteDb.close();
+        } else {
+          var replicationOpts = {continuous: true};
+          promise._remoteDb = remoteDb;
+          var toCallback = function toCallback(err, res) {
+            window.console.log(['toCallback', err, res]);
+          };
+          var fromCallback = function fromCallback(err, res) {
+            window.console.log(['fromCallback', err, res]);
+          };
+          promise._replicateTo = Pouch.replicate(self._db, remoteDb, replicationOpts, toCallback);
+          promise._replicateFrom = Pouch.replicate(remoteDb, self._db, replicationOpts, fromCallback);
+        }
+      });
+      return promise;
     }
   });
   CodeDB.hexEncode = function hexEncode(s) {
@@ -120,7 +187,14 @@
     return {Authorization: 'Basic ' + btoa([user.username, user.password].join(':'))};
   };
   CodeDB.remoteDbName = function remoteDbName(user) {
-    return 'userdb-' + CodeDB.hexEncode(user.username);
+    return 'userdb-' + this.hexEncode(user.username);
+  };
+  CodeDB.getCodeDB = function getCodeDB(name, opts) {
+    var options = _.defaults(opts || {}, {auto_compaction: true});
+    var CodeDB = this;
+    return getPouch(name, options).then(function (db) {
+      return new CodeDB(db, name, options);
+    });
   };
   root.CodeDB = CodeDB;
 }).call(this);
