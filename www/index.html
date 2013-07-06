@@ -1,5 +1,5 @@
 <!doctype html>
-<html manifest="codecosmos.appcache">
+<html>
   <head>
     <meta charset="utf-8">
     <title>CodeCosmos</title>
@@ -28,115 +28,162 @@
     <script src="static/codemirror/addon/hint/javascript-hint.js"></script>
     <script src="static/codemirror/addon/edit/matchbrackets.js"></script>
     <script src="js/persistence.js"></script>
+    <script src="js/AppCtrl.js"></script>
+    <script src="js/CodeCtrl.js"></script>
+    <script src="js/MenuCtrl.js"></script>
+    <script src="js/LoginCtrl.js"></script>
     <script src="js/editor.js"></script>
   </head>
-  <body>
-    <div id="main-container" ng-controller="MenuCtrl">
-      <div id="main-menu" class="pure-menu pure-menu-open pure-menu-horizontal">
-        <a href="#" class="pure-menu-heading">CodeCosmos</a>
-        <ul>
-          <li class="pure-menu">
-            <input type="text" name="filename" placeholder="{{ placeholder }}" ng-model="filename" />
-          </li>
-          <li class="pure-menu">
-            <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
-              <option value="">Load&hellip;</option>
-              <optgroup ng-repeat="group in groups" label="{{group.name}}">
-                <option
-                   ng-repeat="file in group.files"
-                   ng-disabled="isFileCurrent(file)"
-                   value="{{ toJson(file) }}">{{file.name}}</option>
-              </optgroup>
-            </select>
-          </li>
-          <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code" ng-click="toggleRunning()"></button></li>
-          <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code" ng-click="toggleRunning()"></button></li>
-          <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName()"></button></li>
-          <li><button class="icon-share icon-large tool" title="Publish this code" ng-click="publishDoc()"></button></li>
-          <li><button class="icon-download-alt icon-large tool" title="Download a backup copy of all the code in this workspace" ng-click="downloadBackup()"></button></li>
-        </ul>
-        <ul class="right-menu">
-          <li>
-            <button
-               ng-show="faceState == SMILE"
-               class="icon-smile icon-large tool"
-               title="Looks like everything is running ok!"
-               ng-click="faceClick()"></button>
-            <button
-               ng-show="faceState == FROWN"
-               class="icon-frown icon-large tool"
-               title="Time to figure out what caused that error&hellip;"
-               ng-click="faceClick()"></button>
-            <button
-               ng-show="faceState == MEH"
-               class="icon-meh icon-large tool"
-               title="This code won't run, maybe there's a missing semicolon?"
-               ng-click="faceClick()"></button>
-          </li>
-          <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
-        </ul>
-      </div>
-      <div id="share-panel" ng-class="{hide: !displaySharePanel}"
-           class="panel hide">
-        <div class="content">
-          Published to: <a href="{{ shareUrl }}" title="Right-click and Copy Link Address" target="_blank">{{ shareUrl }}</a>
-          <button class="close-button icon-large icon-remove" ng-click="displaySharePanel = false"></button>
-        </div>
-      </div>
-      <div id="backup-panel" ng-class="{hide: !displayBackupPanel}"
-           class="panel hide">
-        <div class="content">
-          <span ng-show="backupPercent < 1">{{ 100 * backupPercent | number:0 }}% complete</span>
-          <span ng-show="backupPercent >= 1">Click to download: <a href="#" download-url="backupUrl" download="codecosmos-backup.zip">codecosmos-backup.zip</a></span>
-          <button class="close-button icon-large icon-remove" ng-click="displayBackupPanel = false"></button>
-        </div>
-      </div>
-    </div>
-    <div id="container">
-      <section id="code"><textarea id="code-js"></textarea></section>
-      <section id="display">
-        <div id="sandbox-ctr">
-          <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
-        </div>
-        <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length || lintErrors.length}">
-          <div ng-show="lintErrors.length > 0">
-            <h1 class="name"><i class="icon-meh"></i> Syntax Issues</h1>
-            <section class="explanation">
-              <i class="icon-lightbulb icon-fixed-width"></i>
-              JavaScript doesn't know how to interpret your code.
-              Mouse over the icons on the left to see more
-              detailed suggestions about how to make your code look
-              like valid JavaScript.
-            </section>
-            <section class="message">
-              <i class="icon-magic icon-fixed-width"></i>Try fixing the first error before
-                looking at the others. There's a chance this one problem
-                is the root cause of all the others!
-            </section>
-          </div>
-          <div ng-show="errors.length > 0">
-            <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
-            <section class="explanation">
-              <i class="icon-lightbulb icon-fixed-width"></i> {{explanation}}
-            </section>
-            <section class="message">
-              <i class="icon-bug icon-fixed-width"></i> {{message}}
-            </section>
-          </div>
-          <h2>Try looking for the problem here:</h2>
-          <ul class="errors">
-            <li class="icon-arrow-right" ng-repeat="err in errors">
-              <span>{{friendlyName(err.name)}} (line {{err.line}})</span>
+  <body ng-controller="AppCtrl">
+    <div class="needs-loading" ng-controller="CodeCtrl">
+      <div id="main-container" ng-controller="MenuCtrl">
+        <div id="main-menu" class="pure-menu pure-menu-open pure-menu-horizontal">
+          <a href="#" class="pure-menu-heading">CodeCosmos</a>
+          <ul>
+            <li class="pure-menu">
+              <input type="text" name="filename" placeholder="{{ placeholder }}" ng-model="filename" />
             </li>
-            <li class="icon-arrow-right" ng-repeat="err in lintErrors">
-              <span>Line {{err.from.line + 1}}
-                (<ng-pluralize count="err.count" when="{'other': '{} problems', 'one': '{{err.message}}'}"></ng-pluralize>)
-              </span>
+            <li class="pure-menu">
+              <select id="menu-files" ng-model="loaded_file" ng-change="loadFile()">
+                <option value="">Load&hellip;</option>
+                <optgroup ng-repeat="group in groups" label="{{group.name}}">
+                  <option
+                     ng-repeat="file in group.files"
+                     ng-disabled="isFileCurrent(file)"
+                     value="{{ toJson(file) }}">{{file.name}}</option>
+                </optgroup>
+              </select>
             </li>
+            <li><button class="icon-trash icon-large tool" title="Throw away this code" ng-click="trashDoc()"></button></li>
+            <li><button class="icon-copy icon-large tool" title="Make a copy of this code" ng-click="copyDoc(); focusName()"></button></li>
+            <li><button class="icon-share icon-large tool" title="Publish this code" ng-click="publishDoc()"></button></li>
+            <li><button class="icon-download-alt icon-large tool" title="Download a backup copy of all the code in this workspace" ng-click="downloadBackup()"></button></li>
+            <li>
+              <button
+                 ng-show="faceState == SMILE"
+                 class="icon-smile icon-large tool face"
+                 title="Looks like everything is running ok!"
+                 ng-click="faceClick()"></button>
+              <button
+                 ng-show="faceState == FROWN"
+                 class="icon-frown icon-large tool face"
+                 title="Time to figure out what caused that error&hellip;"
+                 ng-click="faceClick()"></button>
+              <button
+                 ng-show="faceState == MEH"
+                 class="icon-meh icon-large tool face"
+                 title="This code won't run, maybe there's a missing semicolon?"
+                 ng-click="faceClick()"></button>
+            </li>
+            <li ng-class="{hide: running}"><button class="icon-play icon-large tool" title="Run this code" ng-click="toggleRunning()"></button></li>
+            <li ng-class="{hide: !running}"><button class="icon-pause icon-large tool" title="Pause this code" ng-click="toggleRunning()"></button></li>
+          </ul>
+          <ul class="right-menu">
+            <li><button class="icon-off icon-large tool" title="Logout {{ username }}" ng-click="logout()"></button></li>
           </ul>
         </div>
-        <div id="temporary"></div>
-      </section>
+        <div id="share-panel" ng-class="{hide: !displaySharePanel}"
+             class="panel hide">
+          <div class="content">
+            Published to: <a href="{{ shareUrl }}" title="Right-click and Copy Link Address" target="_blank">{{ shareUrl }}</a>
+            <button class="close-button icon-large icon-remove" ng-click="displaySharePanel = false"></button>
+          </div>
+        </div>
+        <div id="backup-panel" ng-class="{hide: !displayBackupPanel}"
+             class="panel hide">
+          <div class="content">
+            <span ng-show="backupPercent < 1">{{ 100 * backupPercent | number:0 }}% complete</span>
+            <span ng-show="backupPercent >= 1">Click to download: <a href="#" download-url="backupUrl" download="codecosmos-backup.zip">codecosmos-backup.zip</a></span>
+            <button class="close-button icon-large icon-remove" ng-click="displayBackupPanel = false"></button>
+          </div>
+        </div>
+      </div>
+      <div id="container">
+        <section id="code"><textarea id="code-js"></textarea></section>
+        <section id="display">
+          <div id="sandbox-ctr">
+            <iframe id="sandbox" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+          </div>
+          <div id="errors" ng-controller="ErrorCtrl" ng-class="{show: errors.length || lintErrors.length}">
+            <div ng-show="lintErrors.length > 0">
+              <h1 class="name"><i class="icon-meh"></i> Syntax Issues</h1>
+              <section class="explanation">
+                <i class="icon-lightbulb icon-fixed-width"></i>
+                JavaScript doesn't know how to interpret your code.
+                Mouse over the icons on the left to see more
+                detailed suggestions about how to make your code look
+                like valid JavaScript.
+              </section>
+              <section class="message">
+                <i class="icon-magic icon-fixed-width"></i>Try fixing the first error before
+                looking at the others. There's a chance this one problem
+                is the root cause of all the others!
+              </section>
+            </div>
+            <div ng-show="errors.length > 0">
+              <h1 class="name"><i class="icon-ambulance"></i> {{name}}</h1>
+              <section class="explanation">
+                <i class="icon-lightbulb icon-fixed-width"></i> {{explanation}}
+              </section>
+              <section class="message">
+                <i class="icon-bug icon-fixed-width"></i> {{message}}
+              </section>
+            </div>
+            <h2>Try looking for the problem here:</h2>
+            <ul class="errors">
+              <li class="icon-arrow-right" ng-repeat="err in errors">
+                <span>{{friendlyName(err.name)}} (line {{err.line}})</span>
+              </li>
+              <li class="icon-arrow-right" ng-repeat="err in lintErrors">
+                <span>Line {{err.from.line + 1}}
+                  (<ng-pluralize count="err.count" when="{'other': '{} problems', 'one': '{{err.message}}'}"></ng-pluralize>)
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div id="temporary"></div>
+        </section>
+      </div>
+      <div class="front-bg">
+        <img class="front-img" src="img/280046main_CassAcomposite_bkg.jpg">
+      </div>
+      <div class="login-container" ng-controller="LoginCtrl" ng-hide="username">
+        <div class="sign-in-form front-card">
+          <form class="pure-form pure-form-aligned">
+            <fieldset>
+              <legend>Have an account? <span>Sign in</span></legend>
+              <input type="text" placeholder="Username" ng-model="user.username" ng-disabled="signInDisabled" autofocus>
+              <input type="password" placeholder="Password" ng-model="user.password" ng-disabled="signInDisabled">
+              <button type="submit" class="pure-button sign-in-button"
+                      ng-click="signIn(user)"
+                      ng-disabled="signInDisabled">Sign in</button>
+            </fieldset>
+            <div class="error" ng-bind="signInError"></div>
+          </form>
+        </div>
+        <div class="sign-up-form front-card">
+          <form class="pure-form pure-form-stacked">
+            <fieldset>
+              <legend>New to CodeCosmos? <span>Sign up</span></legend>
+              <input type="text" placeholder="Username"
+                     name="username"
+                     ng-model="user.username"
+                     ng-disabled="signInDisabled">
+              <input type="password" placeholder="Password"
+                     ng-model="user.password"
+                     ng-disabled="signInDisabled">
+              <input type="email" placeholder="Email address (optional)"
+                     ng-model="user.email"
+                     ng-disabled="signInDisabled">
+              <button type="submit" class="pure-button sign-up-button"
+                      ng-click="signUp(user)"
+                      ng-disabled="signInDisabled">
+                Sign up for CodeCosmos</button>
+            </fieldset>
+            <div class="error" ng-bind="signUpError"></div>
+          </form>
+        </div>
+      </div>
     </div>
     <div id="loading">
       <div><h1>Loading&hellip;</h1></div>

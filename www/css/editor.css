@@ -7,9 +7,12 @@ div.CodeMirror .sandbox-error-first { background-color: rgba(255, 0, 0, 0.15); }
 #main-menu ul { font-family: "UbuntuRegular"; }
 #main-menu .pure-menu-heading { font-family: "KontrapunktBold"; text-transform: none; font-size: 120%; }
 #main-menu button.tool { padding: 8px 3px; color: #333333; border: none; background-color: transparent; }
+#main-menu .face { cursor: default; }
 #main-menu .right-menu { 
     float: right;
+    margin-right: 4px;
 }
+#main-menu .right-menu .icon-off { color: black; }
 #main-menu .right-menu i {
     vertical-align: middle;
     padding: 5px 3px;
@@ -86,3 +89,65 @@ div.CodeMirror .sandbox-error-first { background-color: rgba(255, 0, 0, 0.15); }
 #errors ul.errors li { display: block; cursor: pointer; }
 #errors ul.errors li span { text-decoration: underline; }
 #sandbox { position: absolute; background-color: #ccc; border: 1px solid black; width: 100%; height: 100%; box-sizing: border-box; }
+
+.login-container {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 500px;
+    width: 400px;
+    margin: -250px 0 0 -200px;
+}
+.front-card {
+    background-color: #ccc;
+    border-left: solid 1px #eee;
+    border-right: solid 1px #eee;
+    border-bottom: solid 1px #ccc;
+    -webkit-box-shadow: 0 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 0 rgba(0,0,0,.1);
+    border-radius: 4px;
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-top: 1em;
+    padding-bottom: 1em;
+    margin: 2em;
+}
+
+.login-container input {
+    margin-bottom: 5px;
+}
+.login-container .error {
+    text-align:right;
+    color: #c00;
+}
+.login-container button {
+    border-radius: 4px;
+    font-size: 80%;
+}
+.login-container legend { font-family: "UbuntuRegular" }
+.login-container legend span { font-family: "UbuntuLight"; }
+.login-container .sign-in-button {
+    color: white;
+    margin-top: -2px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    background: rgb(28,184,65);
+    background-image: -webkit-linear-gradient(#2daddc,#0271bf);
+    background-image: linear-gradient(#2daddc,#0271bf);
+}
+.sign-in-form input[type=text], .sign-up-form input { width: 100%; }
+.sign-in-form input[type=password] { width: 70%; }
+.sign-in-form button { width: 28%; position: relative; top: -3px; }
+.login-container .sign-up-button {
+    color: black;
+    float: right;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+    background-color: #fd9512;
+    background-repeat: repeat-x;
+    background-image: -webkit-linear-gradient(top,#fedc4d 0,#fd9512 100%);
+    background-image: linear-gradient(top,#fedc4d 0,#fd9512 100%);
+}
+
+.front-bg { position: fixed; width: 200%; height: 200%; left: -50%; top: -50%; background: #000; }
+.front-bg img { position: absolute; margin: auto; min-width: 50%; top: 0; left: 0; right: 0; bottom: 0; }
+.needs-loading { display: none; }
+#main-container, #container, .front-bg, .login-container { opacity: 0; }

@@ -4,9 +4,20 @@ module.exports = function (grunt) {
   var fs = require('fs');
   var path = require('path');
       
-  function generateAppCache(options) {
+  var generateAppCache = function generateAppCache() {
+    var options = this.options({});
     var prefix = 'dist';
-    var lines = [fs.readFileSync('www/codecosmos.appcache', 'UTF-8'),
+    var manifest = 'codecosmos.appcache';
+    this.files.forEach(function (file) {
+      file.src.forEach(function (src) {
+        fs.writeFileSync(
+          file.dest,
+          fs.readFileSync(src, 'UTF-8').replace(
+            '<html>',
+            '<html manifest="' + manifest + '">'));
+      });
+    });
+    var lines = [fs.readFileSync('www/' + manifest, 'UTF-8'),
                  '',
                  ['#', '[' + os.hostname() + ']', new Date()].join(' '),
                  'CACHE:'];
@@ -32,7 +43,7 @@ module.exports = function (grunt) {
     walk('', 'dist');
     lines.push('');
     fs.writeFileSync('dist/codecosmos.appcache', lines.join('\n'));
-  }
+  };
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -65,6 +76,11 @@ module.exports = function (grunt) {
       main: {
         files: [{expand: true, src: ['**'], cwd: 'www/', dest: 'dist/'}]
       }
+    },
+    appcache: {
+      main: {
+        files: [{expand: true, src: ['*.html'], cwd: 'www/', dest: 'dist/'}]
+      }
     }
   });
   grunt.loadNpmTasks('grunt-contrib-csslint');
@@ -72,8 +88,8 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.task.registerMultiTask('appcache', 'generates the codecosmos.appcache', generateAppCache);
   grunt.registerTask('default', ['test', 'build']);
   grunt.registerTask('build', ['copy', 'appcache']);
   grunt.registerTask('test', ['jshint', 'csslint']);
-  grunt.registerTask('appcache', generateAppCache);
 };

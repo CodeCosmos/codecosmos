@@ -2,6 +2,14 @@
     "name": "Recipes",
     "files": [
         {
+            "url": "data/basic-drawing.js",
+            "name": "Basic drawing"
+        },
+        {
+            "url": "data/strings.js",
+            "name": "Text and strings"
+        },
+        {
             "url": "data/01-formandcode.js",
             "name": "Repetition + Options"
         }

@@ -148,7 +148,9 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     };
     __setup();
     __once();
+    processing.pushStyle();
     __f();
+    processing.popStyle();
     processing.setup = __wrap(__setup, processing.setup);
     if (processing.draw === undefined) {
       // Clear the log so it's not so obvious we're running this code twice.
@@ -249,7 +251,9 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     };
     __setup();
     __once();
+    processing.pushStyle();
     __f();
+    processing.popStyle();
     processing.setup = __wrap(__setup, processing.setup);
     if (processing.draw === undefined) {
       // Clear the log so it's not so obvious we're running this code twice.
