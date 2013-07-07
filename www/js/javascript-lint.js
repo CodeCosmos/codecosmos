@@ -36,7 +36,7 @@
 
   var worker = null;
   var nextId = 1;
-  function onmessage(event) {
+  var onmessage = function Worker_onmessage(event) {
     var data = event.data;
     var task = this.tasks[data.id];
     if (task) {
@@ -44,15 +44,15 @@
       task.resolve(data.result);
       this.numTasks--;
     }
-  }
-  function onerror(event) {
+  };
+  var onerror = function Worker_onerror(event) {
     worker = null;
     this.terminate();
     for (var id in this.tasks) {
       var task = this.tasks[id];
       task.reject(event);
     }
-  }
+  };
   function validator(text, options, globals) {
     var id = nextId++;
     var task = new Deferred();
