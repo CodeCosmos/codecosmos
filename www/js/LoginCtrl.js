@@ -4,7 +4,7 @@
   var angular = root.angular;
   var _ = root._;
   var CodeDB = root.CodeDB;
-  var images = [
+  var BACKGROUND_IMAGES = [
     '280046main_CassAcomposite_bkg.jpg',
     'hs-2009-05-a-full_bkg.jpg',
     'hs-2010-13-a-full_bkg.jpg'];
@@ -14,10 +14,21 @@
     $scope.signInError = '';
     $scope.signUpError = '';
     $scope.signInDisabled = false;
-    $scope.backgroundImage = images[Math.floor(Math.random() * images.length)];
+    function rotateBackgroundImage() {
+      // always pick a different one than what is currently displayed
+      var images = _.without(BACKGROUND_IMAGES, $scope.backgroundImages);
+      $scope.backgroundImage = images[Math.floor(Math.random() * images.length)];
+    }
+    rotateBackgroundImage();
+
     function focus(sel) {
       _.defer(function () { angular.element(sel).focus(); });
     }
+    $scope.$watch('containerVisible', function (value) {
+      if (value) {
+        rotateBackgroundImage();
+      }
+    });
     function attemptSignUp(user) {
       var id = 'org.couchdb.user:' + user.username;
       var body = {_id: id,
