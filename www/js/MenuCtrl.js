@@ -450,7 +450,6 @@
     $scope.getDoc = getDoc;
     function dbChanged(event, change) {
       var doc = $scope.docDict[change.id] || null;
-      window.console.log(['dbChanged', arguments, doc]);
       if (change.deleted) {
         if (doc) {
           doc.deleted = true;

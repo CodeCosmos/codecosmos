@@ -1,8 +1,9 @@
 // Modified version of https://github.com/marijnh/CodeMirror/blob/master/addon/lint/javascript-lint.js
 (function(window) {
   'use strict';
-  var JSHINT = window.JSHINT;
   var CodeMirror = window.CodeMirror;
+  var Worker = window.Worker;
+  var Deferred = window.jQuery.Deferred;
 
   var bogus = [ "Dangerous comment" ];
 
@@ -33,24 +34,52 @@
     T: false
   };
 
-  function validator(text, options, globals) {
-    JSHINT(text, options, globals);
-    var errors = JSHINT.data().errors;
-    var result = [];
-    if (errors) {
-      parseErrors(errors, result);
+  var worker = null;
+  var nextId = 1;
+  function onmessage(event) {
+    var data = event.data;
+    var task = this.tasks[data.id];
+    if (task) {
+      delete this.tasks[data.id];
+      task.resolve(data.result);
+      this.numTasks--;
     }
-    return result;
+  }
+  function onerror(event) {
+    worker = null;
+    this.terminate();
+    for (var id in this.tasks) {
+      var task = this.tasks[id];
+      task.reject(event);
+    }
+  }
+  function validator(text, options, globals) {
+    var id = nextId++;
+    var task = new Deferred();
+    if (worker && worker.numTasks !== 0) {
+      worker.onerror(new Error('canceled'));
+    }
+    if (!worker) {
+      worker = new Worker('js/javascript-lint-task.js');
+      worker.tasks = {};
+      worker.numTasks = 0;
+      worker.onmessage = onmessage;
+      worker.onerror = onerror;
+    }
+    worker.tasks[id] = task;
+    worker.postMessage({id: id, text: text, options: options, globals: globals});
+    return task.then(parseErrors);
   }
 
   function ccAsyncJavascriptValidator(cm, updateLinting, opts) {
     var ctx = opts.getState(cm);
     var code = ctx.code;
-    var errors = validator(code, options, globals);
-    updateLinting(cm, errors);
-    if (opts.callback) {
-      opts.callback(cm, ctx, errors);
-    }
+    validator(code, options, globals).done(function (errors) {
+      updateLinting(cm, errors);
+      if (opts.callback) {
+        opts.callback(cm, ctx, errors);
+      }
+    });
   }
   ccAsyncJavascriptValidator.updateGlobals = function updateGlobals(f) {
     globals = f(globals);
@@ -95,7 +124,7 @@
     return false;
   }
 
-  function parseErrors(errors, output) {
+  function parseErrors(errors) {
     var pushTabPositions = function (tabpositions, item, index) {
       if (item === '\t') {
         // First col is 1 (not 0) to match error
@@ -111,6 +140,10 @@
         return pos;
       }
     };
+    var output = [];
+    if (!errors) {
+      return output;
+    }
     for ( var i = 0; i < errors.length; i++) {
       var error = errors[i];
       if (error) {
@@ -165,5 +198,6 @@
                        to: CodeMirror.Pos(error.line - 1, end)});
       }
     }
+    return output;
   }
 })(window);

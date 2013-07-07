@@ -84,7 +84,6 @@
               }
             });
           }});
-        window.console.log(['changes', changes]);
         $scope.dbChanges = changes;
         $scope.dbReplication = db.startReplication({url: $scope.remoteDbUrl, user: $scope.session});
       }
@@ -95,7 +94,6 @@
       var fields = ['username', 'password'];
       var session = newValue || {};
       $scope.getDbHandle = null;
-      window.console.log(['watchSession', $scope.username, session.username, $scope.dbChanges]);
       if ($scope.username !== session.username) {
         $scope.docs.splice(0, $scope.docs.length);
         $scope.setDb(null);
@@ -103,7 +101,6 @@
           var localDbUrl = LOCAL_DB_PREFIX + session.username;
           var getDbHandle = CodeDB.getCodeDB(localDbUrl).then(
             scoped(function gotLocalDb(db) {
-              window.console.log(['gotLocalDb', getDbHandle === $scope.getDbHandle]);
               if (getDbHandle === $scope.getDbHandle) {
                 $scope.setDb(db);
               }

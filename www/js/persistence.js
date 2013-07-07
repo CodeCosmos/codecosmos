@@ -149,8 +149,8 @@
         }
       };
       var otherDb = new Pouch(otherDbUrl, dbOpts, function (err, remoteDb) {
-        window.console.log(['otherDb', err, remoteDb]);
         if (err) {
+          window.console.log(['otherDb err', err]);
           promise.cancel();
         } else if (promise._canceled) {
           remoteDb.close();
@@ -158,10 +158,10 @@
           var replicationOpts = {continuous: true};
           promise._remoteDb = remoteDb;
           var toCallback = function toCallback(err, res) {
-            window.console.log(['toCallback', err, res]);
+            window.console.log(['otherDb toCallback', err, res]);
           };
           var fromCallback = function fromCallback(err, res) {
-            window.console.log(['fromCallback', err, res]);
+            window.console.log(['otherDb fromCallback', err, res]);
           };
           promise._replicateTo = Pouch.replicate(self._db, remoteDb, replicationOpts, toCallback);
           promise._replicateFrom = Pouch.replicate(remoteDb, self._db, replicationOpts, fromCallback);
