@@ -72,7 +72,7 @@
       $scope.backupUrl = '';
       $scope.backupPercent = 0;
       if ($scope.bootstrapCode) {
-        $scope.groups = [$scope.myCode, $scope.bootstrapCode];
+        $scope.groups = [$scope.myCode].concat($scope.bootstrapCode.recipes);
       } else {
         $scope.groups = [];
       }

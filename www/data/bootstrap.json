@@ -1,17 +1,10 @@
-{
-    "name": "Recipes",
-    "files": [
-        {
-            "url": "data/basic-drawing.js",
-            "name": "Basic drawing"
-        },
-        {
-            "url": "data/strings.js",
-            "name": "Text and strings"
-        },
-        {
-            "url": "data/01-formandcode.js",
-            "name": "Repetition + Options"
-        }
-    ]
-}
+{"recipes": [
+    {"name": "Basic Drawing",
+     "files": [{"name": "Lines and Coordinates", "url": "data/basic-line.js"},
+               {"name": "Rectangles", "url": "data/basic-rect.js"},
+               {"name": "Ellipses", "url": "data/basic-ellipse.js"},
+               {"name": "Arcs", "url": "data/basic-arc.js"},
+               {"name": "Text and Strings", "url": "data/basic-text.js"}]},
+    {"name": "Form + Code (book)",
+     "files": [{"name": "Repetition + Options", "url": "data/formandcode-01.js"}]}
+]}
