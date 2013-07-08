@@ -1,10 +1,14 @@
 {"recipes": [
     {"name": "Basic Drawing",
-     "files": [{"name": "Lines and Coordinates", "url": "data/basic-line.js"},
-               {"name": "Rectangles", "url": "data/basic-rect.js"},
-               {"name": "Ellipses", "url": "data/basic-ellipse.js"},
-               {"name": "Arcs", "url": "data/basic-arc.js"},
-               {"name": "Text and Strings", "url": "data/basic-text.js"}]},
+     "files":
+     [{"name": "Lines and Coordinates", "url": "data/basic-line.js"},
+      {"name": "Rectangles", "url": "data/basic-rect.js"},
+      {"name": "Ellipses", "url": "data/basic-ellipse.js"},
+      {"name": "Arcs", "url": "data/basic-arc.js"},
+      {"name": "Text and Strings", "url": "data/basic-text.js"}]},
     {"name": "Form + Code (book)",
-     "files": [{"name": "Repetition + Options", "url": "data/formandcode-01.js"}]}
+     "files":
+     [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
+      {"name": "Repeat: Recursive Tree", "url": "data/formandcode-02.js"},
+      {"name": "Parameterize: Wave", "url": "data/formandcode-06.js"}]}
 ]}
