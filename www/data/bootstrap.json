@@ -5,7 +5,10 @@
       {"name": "Rectangles", "url": "data/basic-rect.js"},
       {"name": "Ellipses", "url": "data/basic-ellipse.js"},
       {"name": "Arcs", "url": "data/basic-arc.js"},
-      {"name": "Text and Strings", "url": "data/basic-text.js"}]},
+      {"name": "Text and Strings", "url": "data/basic-text.js"},
+      {"name": "Triangles and Rotation", "url": "data/basic-triangle.js"},
+      {"name": "Quads and Colors", "url": "data/basic-quad.js"},
+      {"name": "Make any shape you want", "url": "data/basic-shape.js"}]},
     {"name": "Form + Code (book)",
      "files":
      [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
