@@ -9,6 +9,10 @@
       {"name": "Triangles and Rotation", "url": "data/basic-triangle.js"},
       {"name": "Quads and Colors", "url": "data/basic-quad.js"},
       {"name": "Make any shape you want", "url": "data/basic-shape.js"}]},
+    {"name": "Animation",
+     "files":
+     [{"name": "Time based animation", "url": "data/animation-time.js"},
+      {"name": "Mouse based animation", "url": "data/animation-mouse.js"}]},
     {"name": "Form + Code (book)",
      "files":
      [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
