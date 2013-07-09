@@ -12,6 +12,8 @@
     {"name": "Animation",
      "files":
      [{"name": "Time based animation", "url": "data/animation-time.js"},
+      {"name": "Time + trig based animation", "url": "data/animation-trig.js"},
+      {"name": "Random animation", "url": "data/animation-random.js"},
       {"name": "Mouse based animation", "url": "data/animation-mouse.js"}]},
     {"name": "Form + Code (book)",
      "files":
