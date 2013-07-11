@@ -22,7 +22,8 @@
      "files":
      [{"name": "Sierpinski Triangle", "url": "data/fractal-sierpinski.js"},
       {"name": "Circle Fractal 1", "url": "data/fractal-circle-1.js"},
-      {"name": "Circle Fractal 2", "url": "data/fractal-circle-2.js"}]},
+      {"name": "Circle Fractal 2", "url": "data/fractal-circle-2.js"},
+      {"name": "Recursive Tree", "url": "data/fractal-tree.js"}]},
     {"name": "Form + Code (book)",
      "files":
      [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
