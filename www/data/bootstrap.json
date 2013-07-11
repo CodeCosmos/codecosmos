@@ -15,6 +15,9 @@
       {"name": "Time + trig based animation", "url": "data/animation-trig.js"},
       {"name": "Random animation", "url": "data/animation-random.js"},
       {"name": "Mouse based animation", "url": "data/animation-mouse.js"}]},
+    {"name": "Physics",
+     "files":
+     [{"name": "Basketball", "url": "data/physics-basketball.js"}]},
     {"name": "Form + Code (book)",
      "files":
      [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
