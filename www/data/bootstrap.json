@@ -18,6 +18,11 @@
     {"name": "Physics",
      "files":
      [{"name": "Basketball", "url": "data/physics-basketball.js"}]},
+    {"name": "Fractals",
+     "files":
+     [{"name": "Sierpinski Triangle", "url": "data/fractal-sierpinski.js"},
+      {"name": "Circle Fractal 1", "url": "data/fractal-circle-1.js"},
+      {"name": "Circle Fractal 2", "url": "data/fractal-circle-2.js"}]},
     {"name": "Form + Code (book)",
      "files":
      [{"name": "Repeat: Embedded Iteration", "url": "data/formandcode-01.js"},
