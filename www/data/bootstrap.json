@@ -8,7 +8,8 @@
       {"name": "Text and Strings", "url": "data/basic-text.js"},
       {"name": "Triangles and Rotation", "url": "data/basic-triangle.js"},
       {"name": "Quads and Colors", "url": "data/basic-quad.js"},
-      {"name": "Make any shape you want", "url": "data/basic-shape.js"}]},
+      {"name": "Make any shape you want", "url": "data/basic-shape.js"},
+      {"name": "Draw a heart with Bézier curves", "url": "data/basic-bezier.js"}]},
     {"name": "Animation",
      "files":
      [{"name": "Time based animation", "url": "data/animation-time.js"},
