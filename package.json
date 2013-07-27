@@ -19,7 +19,7 @@
         "grunt-bower-task": "~0.2.3"
     },
     "scripts": {
-        "prepublish": "./node_modules/.bin/grunt build --verbose",
+        "prepublish": "./node_modules/.bin/grunt prepublish --verbose",
         "test": "./node_modules/.bin/grunt test --verbose"
     }
 }

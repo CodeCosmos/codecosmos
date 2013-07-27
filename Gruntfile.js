@@ -98,7 +98,8 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-bower-task');
   grunt.task.registerMultiTask('appcache', 'generates the codecosmos.appcache', generateAppCache);
-  grunt.registerTask('default', ['bower:install', 'test', 'build']);
+  grunt.registerTask('default', ['test', 'build']);
   grunt.registerTask('build', ['copy', 'appcache']);
+  grunt.registerTask('prepublish', ['bower:install', 'default']);
   grunt.registerTask('test', ['jshint', 'csslint']);
 };
