@@ -7,6 +7,8 @@
         "url": "https://github.com/etrepum/codecosmos.git"
     },
     "devDependencies": {
+        "bower": "~1.0.0",
+        "grunt-cli": "~0.1.9",
         "grunt": "~0.4.1",
         "jshint": "~2.1.3",
         "grunt-contrib-jshint": "~0.6.0",
