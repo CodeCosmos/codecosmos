@@ -18,7 +18,7 @@
         "grunt-contrib-clean": "~0.4.1"
     },
     "scripts": {
-        "build": "grunt build --verbose",
-        "test": "grunt test --verbose"
+        "prepublish": "./node_modules/.bin/grunt build --verbose",
+        "test": "./node_modules/.bin/grunt test --verbose"
     }
 }
