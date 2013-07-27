@@ -82,6 +82,13 @@ module.exports = function (grunt) {
       main: {
         files: [{expand: true, src: ['*.html'], cwd: 'www/', dest: 'dist/'}]
       }
+    },
+    bower: {
+      install: {
+        options: {
+          copy: false
+        }
+      }
     }
   });
   grunt.loadNpmTasks('grunt-contrib-csslint');
@@ -89,8 +96,9 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-bower-task');
   grunt.task.registerMultiTask('appcache', 'generates the codecosmos.appcache', generateAppCache);
-  grunt.registerTask('default', ['test', 'build']);
+  grunt.registerTask('default', ['bower:install', 'test', 'build']);
   grunt.registerTask('build', ['copy', 'appcache']);
   grunt.registerTask('test', ['jshint', 'csslint']);
 };
