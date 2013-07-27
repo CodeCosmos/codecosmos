@@ -15,5 +15,8 @@
     "jsziptools": "git://github.com/ukyo/jsziptools.git#~2.3.2",
     "underscore": "git://github.com/documentcloud/underscore.git#~1.5.0",
     "requirejs": "git://github.com/jrburke/requirejs.git#~2.1.6"
+  },
+  "resolutions": {
+      "estraverse": "~1.1.2-1"
   }
 }
