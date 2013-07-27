@@ -9,7 +9,7 @@
     "esprima": "git://github.com/ariya/esprima.git#~1.0.3",
     "estraverse": "git://github.com/Constellation/estraverse.git#~1.1.2-1",
     "escodegen": "git://github.com/Constellation/escodegen.git#~0.0.23",
-    "timbre": "git://github.com/mohayonao/timbre.js.git#~13.05.01",
+    "timbre": "git://github.com/mohayonao/timbre.js.git#v13.05.01",
     "screenfull": "git://github.com/sindresorhus/screenfull.js.git#~1.0.4",
     "font-awesome": "git://github.com/components/font-awesome.git#~3.2.0",
     "jsziptools": "git://github.com/ukyo/jsziptools.git#~2.3.2",
