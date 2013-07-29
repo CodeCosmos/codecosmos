@@ -13,9 +13,9 @@
   if (window.location && window.location.port === "8080") {
     // local deployment hack
     REMOTE_DB_URL = 'http://' + window.location.hostname + ':5984/';
-  } else if (window.location.href.indexOf('https://www.codecosmos.com') === 0) {
-    // production deployment hack
-    REMOTE_DB_URL = 'https://www.codecosmos.com/';
+  } else if (window.location.protocol === 'https:') {
+    // production deployment hack, db and static files on same hostname.
+    REMOTE_DB_URL = window.location.protocol + window.location.host + '/';
   }
     
   function AppCtrl($scope, $http, $window) {
