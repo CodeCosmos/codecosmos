@@ -15,7 +15,7 @@
     REMOTE_DB_URL = 'http://' + window.location.hostname + ':5984/';
   } else if (window.location.protocol === 'https:') {
     // production deployment hack, db and static files on same hostname.
-    REMOTE_DB_URL = window.location.protocol + window.location.host + '/';
+    REMOTE_DB_URL = window.location.protocol + '//' + window.location.host + '/';
   }
     
   function AppCtrl($scope, $http, $window) {
