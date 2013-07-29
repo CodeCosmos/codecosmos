@@ -8,11 +8,16 @@
   var LOCAL_DB_PREFIX = 'codecosmos-';
   var REMOTE_DB_PREFIX = 'userdb-';
   var SESSION_KEY = LOCAL_DB_PREFIX + '$session';
+  // legacy URL
   var REMOTE_DB_URL = 'https://etrepum.iriscouch.com:6984/';
   if (window.location && window.location.port === "8080") {
     // local deployment hack
     REMOTE_DB_URL = 'http://' + window.location.hostname + ':5984/';
+  } else if (window.location.href.indexOf('https://www.codecosmos.com') === 0) {
+    // production deployment hack
+    REMOTE_DB_URL = 'https://www.codecosmos.com/';
   }
+    
   function AppCtrl($scope, $http, $window) {
     // this is the current deferred for getting the db
     $scope.getDbHandle = null;
