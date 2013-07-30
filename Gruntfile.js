@@ -14,7 +14,7 @@ module.exports = function (grunt) {
           file.dest,
           fs.readFileSync(src, 'UTF-8').replace(
             '<html>',
-            '<html manifest="' + manifest + '">'));
+            '<html manifest="/' + manifest + '">'));
       });
     });
     var lines = [fs.readFileSync('www/' + manifest, 'UTF-8'),
