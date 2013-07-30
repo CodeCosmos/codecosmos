@@ -83,11 +83,11 @@ module.exports = function (grunt) {
         files: [{expand: true, src: ['*.html'], cwd: 'www/', dest: 'dist/'}]
       }
     },
-    bower: {
-      install: {
-        options: {
-          copy: false
-        }
+    shell: {
+      bower: {
+        command: "./node_modules/.bin/bower install",
+        stdout: true,
+        stderr: true
       }
     }
   });
@@ -96,10 +96,10 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-bower-task');
+  grunt.loadNpmTasks('grunt-shell');
   grunt.task.registerMultiTask('appcache', 'generates the codecosmos.appcache', generateAppCache);
   grunt.registerTask('default', ['test', 'build']);
   grunt.registerTask('build', ['copy', 'appcache']);
-  grunt.registerTask('prepublish', ['bower:install', 'default']);
+  grunt.registerTask('prepublish', ['shell:bower', 'default']);
   grunt.registerTask('test', ['jshint', 'csslint']);
 };

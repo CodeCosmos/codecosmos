@@ -16,7 +16,7 @@
         "grunt-contrib-copy": "~0.4.1",
         "grunt-contrib-csslint": "~0.1.2",
         "grunt-contrib-clean": "~0.4.1",
-        "grunt-bower-task": "~0.2.3"
+        "grunt-shell": "~0.3.1"
     },
     "scripts": {
         "prepublish": "./node_modules/.bin/grunt prepublish --verbose",
