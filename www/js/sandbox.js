@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     // Ignore everything below here! :)
     var p = processing;
     function __setup() {
-      processing.size(window.innerWidth, window.innerHeight);
+      //processing.size(window.innerWidth, window.innerHeight);
     }
     function __once() {
       processing.textFont(processing.loadFont("serif"), 20);
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     
     function __fail(err) {
       __cont = false;
-      processing.exit();
+      processing.remove();
       __postFail(err);
       var errWrapper = new Error('[__reported__] ' + err.message);
       errWrapper.error = err;
@@ -204,11 +204,11 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
       if (__cont) {
         window.requestAnimationFrame(__resetCounter);
       } else {
-        processing.exit();
+        processing.remove();
       }
     }
     function __setup() {
-      processing.size(window.innerWidth, window.innerHeight);
+      //processing.size(window.innerWidth, window.innerHeight);
     }
     function __once() {
       processing.textFont(processing.loadFont("serif"), 20);
@@ -458,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
     if (tinyLogDiv && tinyLogDiv.click) {
       tinyLogDiv.click();
     }
-    pi.exit();
+    pi.remove();
     pi = new p5(
       sketchProc.bind(null, onFail, timbre, T),
       'pjs');
