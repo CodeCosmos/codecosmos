@@ -1,7 +1,7 @@
 {
     "name": "codecosmos",
     "title": "CodeCosmos",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/etrepum/codecosmos.git"
@@ -16,10 +16,12 @@
         "grunt-contrib-copy": "~0.4.1",
         "grunt-contrib-csslint": "~0.1.2",
         "grunt-contrib-clean": "~0.4.1",
-        "grunt-shell": "~0.3.1"
+        "grunt-shell": "~0.3.1",
+        "node-static": "~0.7.3"
     },
     "scripts": {
         "prepublish": "./node_modules/.bin/bower install && ./node_modules/.bin/grunt prepublish --verbose",
-        "test": "./node_modules/.bin/grunt test --verbose"
+        "test": "./node_modules/.bin/grunt test --verbose",
+        "dev": "./bin/dev-server.js"
     }
 }

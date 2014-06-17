@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   var Processing = window.Processing;
   var timbre = window.timbre;
   var T = window.T;
-  var pi = new Processing('pjs', sketchProc);
+  var pi = new p5(sketchProc, 'pjs');
   var Syntax = estraverse.Syntax;
 
   var magicGlobals = [
@@ -288,9 +288,9 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
   }
 
   window.wrapForExport = function wrapForExport(code) {
-    return ["var pi = new Processing('pjs', function (processing) { ",
+    return ["var pi = new p5(function (processing) { ",
             wrapCode(code, processingExportTemplate, 'myCodeCosmos'),
-            "});"].join('');
+            "}, 'pjs');"].join('');
   };
 
   var injectStatement = esprima.parse(extractCode(function (__ctr, __maxctr, __cont) {
@@ -459,9 +459,9 @@ document.addEventListener('DOMContentLoaded', function sandboxLoaded() {
       tinyLogDiv.click();
     }
     pi.exit();
-    pi = new Processing(
-      'pjs',
-      sketchProc.bind(null, onFail, timbre, T));
+    pi = new p5(
+      sketchProc.bind(null, onFail, timbre, T),
+      'pjs');
     // if we got here, it succeeded
     postSuccess(code, id);
   }

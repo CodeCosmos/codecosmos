@@ -16,7 +16,7 @@
   }
 
   var GITHUB_SCRIPT_URLS = [
-    'http://cdnjs.cloudflare.com/ajax/libs/processing.js/1.4.1/processing-api.min.js',
+    'https://raw.githubusercontent.com/lmccart/p5.js/master/lib/p5.js',
     'http://mohayonao.github.io/timbre.js/timbre.js'];
 
   function exportIndexHtml(title, scriptURLs, mainScript) {

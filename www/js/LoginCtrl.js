@@ -14,6 +14,9 @@
     $scope.signInError = '';
     $scope.signUpError = '';
     $scope.signInDisabled = false;
+    if (root.location.hash === '#no-login') {
+      $scope.replaceSession($scope.user);
+    }
     function rotateBackgroundImage() {
       // always pick a different one than what is currently displayed
       var images = _.without(BACKGROUND_IMAGES, $scope.backgroundImages);
