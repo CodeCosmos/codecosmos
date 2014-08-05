@@ -8,14 +8,12 @@
   var LOCAL_DB_PREFIX = 'codecosmos-';
   var REMOTE_DB_PREFIX = 'userdb-';
   var SESSION_KEY = LOCAL_DB_PREFIX + '$session';
-  // legacy URL
-  var REMOTE_DB_URL = 'https://etrepum.iriscouch.com:6984/';
-  if (window.location && window.location.port === "8080") {
+  // production deployment: db and static files on same hostname.
+  var REMOTE_DB_URL = window.location.protocol + '//' + window.location.host + '/';
+  // any 8xxx port is considered local development
+  if (window.location && /^8\d{3}$/.test(window.location.port)) {
     // local deployment hack
     REMOTE_DB_URL = 'http://' + window.location.hostname + ':5984/';
-  } else if (window.location.protocol === 'https:') {
-    // production deployment hack, db and static files on same hostname.
-    REMOTE_DB_URL = window.location.protocol + '//' + window.location.host + '/';
   }
     
   function AppCtrl($scope, $http, $window) {

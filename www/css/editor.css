@@ -148,3 +148,28 @@ div.CodeMirror .sandbox-error-first { background-color: rgba(255, 0, 0, 0.15); }
 .front-bg img { position: absolute; margin: auto; min-width: 50%; top: 0; left: 0; right: 0; bottom: 0; }
 .needs-loading { display: none; }
 #main-container, #container, .front-bg, .login-container { opacity: 0; }
+.branding-wrapper {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+}
+.branding-wrapper a:link, .branding-wrapper a:visited {
+    text-decoration: none;
+    color: black;
+}
+.rackspace-branding {
+    background-color: rgba(255, 255, 255, 0.8);
+    font-family: "UbuntuRegular";
+    border-radius: 4px;
+    padding: 8px;
+    -webkit-box-shadow: 0 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 0 rgba(0,0,0,.1);
+    text-align: center;
+    position: relative;
+    left: -50%;
+}
+.rackspace-branding-img {
+    width: 157px;
+    height: 46px;
+    margin: 4px;
+}
